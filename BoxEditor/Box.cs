@@ -31,6 +31,7 @@ namespace BoxEditor
 		public Rect Frame;
         public List<Port> Ports = new List<Port>();
 		public BoxStyle Style = BoxStyle.Default;
+		public State State = State.None;
 
 		public void AddPort(object value, Point point, Directions directions)
         {
@@ -39,7 +40,7 @@ namespace BoxEditor
 
         public Box ToBox()
         {
-			return new Box(Value, Frame, Style, State.None, Ports.ToImmutableArray());
+			return new Box(Value, Frame, Style, State, Ports.ToImmutableArray());
         }
     }
 

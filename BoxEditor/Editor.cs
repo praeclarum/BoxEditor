@@ -9,6 +9,9 @@ namespace BoxEditor
 {
     public class Editor
     {
+		double zoom = 1;
+		//Point center = Point.Zero;
+
         Diagram diagram = Diagram.Empty;
 
         public Diagram Diagram
@@ -58,6 +61,9 @@ namespace BoxEditor
 
         public void Draw(ICanvas canvas, Rect dirtyFrame)
         {
+			var handlePen = new Pen(diagram.Style.HandleBorderColor, 1.0 / zoom);
+			var handleBrush = new SolidBrush(diagram.Style.HandleBackgroundColor);
+
 			if (diagram.Style.BackgroundColor.A > 0)
 			{
 				canvas.FillRectangle(dirtyFrame, diagram.Style.BackgroundColor);
@@ -88,6 +94,48 @@ namespace BoxEditor
 					a.Style.LineWidth);
 				ArrowDrawn?.Invoke(a, canvas);
             }
-        }
-    }
+			foreach (var b in diagram.Boxes)
+			{
+				if (b.State.IsSelected)
+				{
+					DrawBoxHandles(b, canvas, handlePen, handleBrush);
+				}
+			}
+			foreach (var a in diagram.Arrows)
+			{
+				if (a.State.IsSelected)
+				{
+					DrawArrowHandles(a, canvas, handlePen, handleBrush);
+				}
+			}
+		}
+
+		void DrawBoxHandles(Box box, ICanvas canvas, Pen handlePen, Brush handleBrush)
+		{
+			DrawBoxHandle(box.Frame.TopLeft, canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.TopLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.TopRight, canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.TopRight + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.BottomRight, canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.BottomLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.BottomLeft, canvas, handlePen, handleBrush);
+			DrawBoxHandle(box.Frame.TopLeft + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
+		}
+
+		void DrawBoxHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
+		{
+			var s = 8.0 / zoom;
+			canvas.DrawRectangle(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
+		}
+		void DrawArrowHandles(Arrow arrow, ICanvas canvas, Pen handlePen, Brush handleBrush)
+		{
+			DrawArrowHandle(arrow.From.Port.Point, canvas, handlePen, handleBrush);
+			DrawArrowHandle(arrow.To.Port.Point, canvas, handlePen, handleBrush);
+		}
+		void DrawArrowHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
+		{
+			var s = 8.0 / zoom;
+			canvas.DrawEllipse(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
+		}
+	}
 }

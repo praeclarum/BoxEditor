@@ -51,13 +51,17 @@ namespace BoxEditor
 	public class DiagramStyle
 	{
 		public readonly Color BackgroundColor;
+		public readonly Color HandleBackgroundColor;
+		public readonly Color HandleBorderColor;
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
-			Color.FromWhite(236/255.0, 1));
+			Color.FromWhite(236/255.0, 1), Colors.White, Colors.Black);
 
-		public DiagramStyle(Color backgroundColor)
+		public DiagramStyle(Color backgroundColor, Color handleBackgroundColor, Color handleBorderColor)
 		{
 			BackgroundColor = backgroundColor;
+			HandleBackgroundColor = handleBackgroundColor;
+			HandleBorderColor = handleBorderColor;
 		}
 	}
 }
