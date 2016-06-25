@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxEditor", "BoxEditor\BoxEditor.csproj", "{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{FBDB577B-C367-4802-B88A-B29E7B86DE84}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxEditor.Mac", "Samples\BoxEditor.Mac\BoxEditor.Mac.csproj", "{973E42CB-8633-44C1-AEB7-2F2B084ECC96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,8 +19,15 @@ Global
 		{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{973E42CB-8633-44C1-AEB7-2F2B084ECC96} = {FBDB577B-C367-4802-B88A-B29E7B86DE84}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{973E42CB-8633-44C1-AEB7-2F2B084ECC96}</ProjectGuid>
+    <ProjectTypeGuids>{A3F8F2AB-B479-4A4A-A458-A89E7DC349F1};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>BoxEditor.Mac</RootNamespace>
+    <AssemblyName>BoxEditorMac</AssemblyName>
+    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkIdentifier>Xamarin.Mac</TargetFrameworkIdentifier>
+    <MonoMacResourcePrefix>Resources</MonoMacResourcePrefix>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <EnableCodeSigning>false</EnableCodeSigning>
+    <CodeSigningKey>Mac Developer</CodeSigningKey>
+    <CreatePackage>false</CreatePackage>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <IncludeMonoRuntime>false</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <Profiling>true</Profiling>
+    <HttpClientHandler>HttpClientHandler</HttpClientHandler>
+    <TlsProvider>Default</TlsProvider>
+    <LinkMode>None</LinkMode>
+    <XamMacArch></XamMacArch>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <DefineConstants></DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <EnableCodeSigning>true</EnableCodeSigning>
+    <CodeSigningKey>Developer ID Application</CodeSigningKey>
+    <CreatePackage>true</CreatePackage>
+    <EnablePackageSigning>false</EnablePackageSigning>
+    <IncludeMonoRuntime>true</IncludeMonoRuntime>
+    <UseSGen>true</UseSGen>
+    <UseRefCounting>true</UseRefCounting>
+    <LinkMode>SdkOnly</LinkMode>
+    <HttpClientHandler>HttpClientHandler</HttpClientHandler>
+    <TlsProvider>Default</TlsProvider>
+    <XamMacArch></XamMacArch>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Xamarin.Mac" />
+    <Reference Include="NGraphics">
+      <HintPath>..\..\packages\NGraphics.0.4.0\lib\Xamarin.Mac20\NGraphics.dll</HintPath>
+    </Reference>
+    <Reference Include="NGraphics.Mac">
+      <HintPath>..\..\packages\NGraphics.0.4.0\lib\Xamarin.Mac20\NGraphics.Mac.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\Contents.json" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-128.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-128%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-16.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-16%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-256.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-256%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-32.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-32%402x.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-512.png" />
+    <ImageAsset Include="Assets.xcassets\AppIcons.appiconset\AppIcon-512%402x.png" />
+    <ImageAsset Include="Assets.xcassets\Contents.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Info.plist" />
+    <None Include="Entitlements.plist" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Main.cs" />
+    <Compile Include="AppDelegate.cs" />
+    <Compile Include="ViewController.cs" />
+    <Compile Include="ViewController.designer.cs">
+      <DependentUpon>ViewController.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Document.cs" />
+    <Compile Include="EditorView.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterfaceDefinition Include="Main.storyboard" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\BoxEditor\BoxEditor.csproj">
+      <Project>{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}</Project>
+      <Name>BoxEditor</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Xamarin\Mac\Xamarin.Mac.CSharp.targets" />
+</Project>
