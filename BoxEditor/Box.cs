@@ -13,17 +13,19 @@ namespace BoxEditor
         public readonly Rect Frame;
 		public readonly BoxStyle Style;
         public readonly ImmutableArray<Port> Ports;
+		public readonly State State;
 
-		public Box(object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
+		public Box(object value, Rect frame, BoxStyle style, State state, ImmutableArray<Port> ports)
         {
             Value = value;
             Frame = frame;
 			Style = style;
+			State = state;
             Ports = ports;
         }
     }
 
-    public class BoxBuilder
+	public class BoxBuilder
     {
         public object Value;
 		public Rect Frame;
@@ -37,7 +39,7 @@ namespace BoxEditor
 
         public Box ToBox()
         {
-            return new Box(Value, Frame, Style, Ports.ToImmutableArray());
+			return new Box(Value, Frame, Style, State.None, Ports.ToImmutableArray());
         }
     }
 

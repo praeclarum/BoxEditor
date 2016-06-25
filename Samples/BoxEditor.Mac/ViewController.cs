@@ -72,7 +72,7 @@ namespace BoxEditor.Mac
 					var c = (Tuple<string,string>)o;
 					var fp = f(c.Item1, "Center");
 					var tp = f(c.Item2, "Center");
-					return new Arrow(o, ArrowStyle.Default, fp, tp);
+					return new Arrow(o, ArrowStyle.Default, State.None, fp, tp);
 				});
 
 			editorView.Editor.BoxDrawn += (b, c) =>

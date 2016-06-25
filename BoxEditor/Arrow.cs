@@ -6,14 +6,15 @@ namespace BoxEditor
     {
         public readonly object Value;
 		public readonly ArrowStyle Style;
-
+		public readonly State State;
 		public readonly PortRef From;
         public readonly PortRef To;
 
-		public Arrow(object value, ArrowStyle style, PortRef @from, PortRef @to)
+		public Arrow(object value, ArrowStyle style, State state, PortRef @from, PortRef @to)
         {
             Value = value;
 			Style = style;
+			State = state;
             From = @from;
             To = @to;
         }
