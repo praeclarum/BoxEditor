@@ -2,6 +2,7 @@
 
 using AppKit;
 using Foundation;
+using NGraphics;
 
 namespace BoxEditor.Mac
 {
@@ -47,8 +48,8 @@ namespace BoxEditor.Mac
 
 		void OnDocumentChanged()
 		{
-			var vals = new[] { "A", "B", "C", "D" };
-			var conns = new[] { Tuple.Create("A", "C") };
+			var vals = new[] { "AA", "BA", "CC", "DB", "AC" };
+			var conns = new[] { Tuple.Create("AA", "CC") };
 
 			var d = Diagram.Create(
 				DiagramStyle.Default,
@@ -59,10 +60,11 @@ namespace BoxEditor.Mac
 					var v = (string)o;
 					var b = new BoxBuilder();
 					b.Value = v;
-					b.Frame = new NGraphics.Rect(100 + (v[0]-'A')*125, 100, 100, 100);
-					var pf = b.Frame;
-					pf.Inflate(-0.4 * pf.Width, -0.4 * pf.Height);
-					b.AddPort("Center", pf, PortStyle.Default);
+					b.Frame = new NGraphics.Rect(
+						100 + (v[0] - 'A') * 125,
+						100 + (v[1] - 'A') * 125,
+						100, 100);
+					b.AddPort("Center", b.Frame.Center, Directions.Any);
 					return b.ToBox();
 				},
 				(f, o) =>
@@ -72,6 +74,12 @@ namespace BoxEditor.Mac
 					var tp = f(c.Item2, "Center");
 					return new Arrow(o, ArrowStyle.Default, fp, tp);
 				});
+
+			editorView.Editor.BoxDrawn += (b, c) =>
+			{
+				var v = (string)b.Value;
+				c.DrawText(v, b.Frame.BottomLeft+new Point(8, -8), new Font("Helvetica-Regular", 20), brush: new SolidBrush(Colors.Red));
+			};
 
 			editorView.Editor.Diagram = d;
 		}

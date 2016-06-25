@@ -30,9 +30,9 @@ namespace BoxEditor
         public List<Port> Ports = new List<Port>();
 		public BoxStyle Style = BoxStyle.Default;
 
-		public void AddPort(string id, Rect frame, PortStyle style)
+		public void AddPort(object value, Point point, Directions directions)
         {
-            Ports.Add(new Port(id, frame, style));
+			Ports.Add(new Port(value, point, directions));
         }
 
         public Box ToBox()

@@ -1,36 +1,33 @@
-﻿using NGraphics;
+﻿using System;
+using NGraphics;
 
 namespace BoxEditor
 {
     public class Port
     {
-        public readonly string Id;
+        public readonly object Value;
+        public readonly Point Point;
+		public readonly Directions Directions;
 
-        public readonly Rect Frame;
-		public readonly PortStyle Style;
-
-		public Port(string id, Rect frame, PortStyle style)
+		public Port(object value, Point point, Directions directions)
         {
-            Id = id;
-            Frame = frame;
-			Style = style;
+            Value = value;
+            Point = point;
+			Directions = directions;
         }
     }
 
-	public class PortStyle
+	[Flags]
+	public enum Directions
 	{
-		public readonly Color BackgroundColor;
-		public readonly Color BorderColor;
-		public readonly double BorderWidth;
-
-		public static readonly PortStyle Default = new PortStyle(Colors.LightGray, Colors.Clear, 1);
-
-		public PortStyle(Color backgroundColor, Color borderColor, double borderWidth)
-		{
-			BackgroundColor = backgroundColor;
-			BorderColor = borderColor;
-			BorderWidth = borderWidth;
-		}
+		None = 0x00,
+		Left = 0x01,
+		Right = 0x02,
+		Up = 0x04,
+		Down = 0x08,
+		Horizontal = Left | Right,
+		Vertical = Up | Down,
+		Any = Left | Right | Up | Down,
 	}
 
 	public class PortRef

@@ -76,22 +76,14 @@ namespace BoxEditor
 				BoxDrawn?.Invoke(b, canvas);
                 foreach (var p in b.Ports)
                 {
-                    if (p.Style.BackgroundColor.A > 0)
-					{
-						canvas.FillRectangle(p.Frame, p.Style.BackgroundColor);
-					}
-					if (p.Style.BorderColor.A > 0)
-					{
-						canvas.DrawRectangle(p.Frame, p.Style.BorderColor, p.Style.BorderWidth);
-					}
 					PortDrawn?.Invoke(b, p, canvas);
                 }
             }
             foreach (var a in diagram.Arrows)
             {
                 canvas.DrawLine(
-					a.From.Port.Frame.Center,
-					a.To.Port.Frame.Center,
+					a.From.Port.Point,
+					a.To.Port.Point,
 					a.Style.LineColor,
 					a.Style.LineWidth);
 				ArrowDrawn?.Invoke(a, canvas);
