@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace BoxEditor
 {
@@ -81,7 +82,7 @@ namespace BoxEditor
 		int dragBoxHandle = 0;
 		Box dragBoxHandleBox = null;
 
-		double handleSize = 22;
+		double handleSize = 8;
 
 		public void TouchBegan (TouchEvent touch)
         {
@@ -112,22 +113,13 @@ namespace BoxEditor
 					dragBoxHandle = handleHit.Item2;
 					dragBoxHandleBox = handleHit.Item1;
 				}
-				else if (boxHit != null && selection.Count > 0)
+				else if (boxHit != null)
 				{
 					dragBoxStartSelected = IsSelected(boxHit);
 					if (!dragBoxStartSelected)
 					{
-						lastEditMenuObject = null;
-					}
-					if (selection.Count == 1)
-					{
 						Select(new[] { boxHit });
-					}
-					else {
-						if (!dragBoxStartSelected)
-						{
-							Select(new[] { boxHit });
-						}
+						lastEditMenuObject = null;
 					}
 					touchGesture = TouchGesture.DragSelection;
 					dragBoxLastDiagramLoc = diagramLoc;
@@ -136,6 +128,7 @@ namespace BoxEditor
 				}
 				else {
 					touchGesture = TouchGesture.None;
+					SelectNone();
 				}
 			}
 			else {
@@ -206,6 +199,33 @@ namespace BoxEditor
 			activeTouches.Remove(touch.TouchId);
 		}
 
+		public void MouseMoved(TouchEvent touch)
+		{
+			var diagramLoc = ViewToDiagram(touch.Location);
+
+			var boxHit = diagram.HitTestBoxes(diagramLoc).FirstOrDefault();
+
+			//Debug.WriteLine($"MOUSE {touch} b={boxHit}");
+
+			var newHover = hoverSelection;
+
+			if (boxHit != null)
+			{
+				newHover = boxHit;
+			}
+			else {
+				newHover = null;
+			}
+
+			if (newHover != hoverSelection)
+			{
+				//Debug.WriteLine($"CHOVER {newHover} <--- {hoverSelection}");
+				hoverSelection =
+					selection.Contains(newHover) ? null : newHover;
+				Redraw?.Invoke();
+			}
+		}
+
 		enum TouchGesture
 		{
 			None,
@@ -220,6 +240,8 @@ namespace BoxEditor
 
 		readonly List<ISelectable> selection = new List<ISelectable>();
 
+		ISelectable hoverSelection = null;
+
 		bool IsSelected(ISelectable s)
 		{
 			return selection.Contains(s);
@@ -229,6 +251,12 @@ namespace BoxEditor
 		{
 			selection.Clear();
 			selection.AddRange(selects);
+
+			if (selection.Contains(hoverSelection))
+			{
+				hoverSelection = null;
+			}
+
 			Redraw?.Invoke();
 		}
 
@@ -369,6 +397,8 @@ namespace BoxEditor
 
 		public void Draw(ICanvas canvas, Rect dirtyViewRect)
         {
+			//Debug.WriteLine("DRAW");
+
 			//
 			// Draw the background in View-scale
 			//
@@ -429,6 +459,16 @@ namespace BoxEditor
 				if (IsSelected(a))
 				{
 					DrawArrowHandles(a, canvas, handlePen, handleBrush);
+				}
+			}
+			//Debug.WriteLine($"HOVER SEL = {hoverSelection}");
+			if (hoverSelection != null)
+			{
+				var b = hoverSelection as Box;
+				if (b != null)
+				{
+					var f = b.Frame.GetInflated(2, 2);
+					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, 2);
 				}
 			}
 

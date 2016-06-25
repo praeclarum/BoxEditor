@@ -72,15 +72,24 @@ namespace BoxEditor
 		public readonly Color BackgroundColor;
 		public readonly Color HandleBackgroundColor;
 		public readonly Color HandleBorderColor;
+		public readonly Color HoverSelectionColor;
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
-			Color.FromWhite(236/255.0, 1), Colors.White, Colors.Black);
+			Color.FromWhite(236/255.0, 1),
+			Colors.White,
+			Colors.Black,
+			new Color("#45C0FE"));
 
-		public DiagramStyle(Color backgroundColor, Color handleBackgroundColor, Color handleBorderColor)
+		public DiagramStyle(
+			Color backgroundColor, 
+			Color handleBackgroundColor, 
+			Color handleBorderColor, 
+			Color hoverSelectionColor)
 		{
 			BackgroundColor = backgroundColor;
 			HandleBackgroundColor = handleBackgroundColor;
 			HandleBorderColor = handleBorderColor;
+			HoverSelectionColor = hoverSelectionColor;
 		}
 	}
 }

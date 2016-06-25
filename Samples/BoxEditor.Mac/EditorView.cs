@@ -1,5 +1,5 @@
 ﻿using System;
-
+using System.Diagnostics;
 using AppKit;
 using Foundation;
 
@@ -10,7 +10,7 @@ namespace BoxEditor.Mac
 	[Register("EditorView")]
 	public class EditorView : NSView
 	{
-		Editor editor = new Editor();
+		Editor editor;
 
 		public Editor Editor
 		{
@@ -36,10 +36,17 @@ namespace BoxEditor.Mac
 
 		public EditorView(IntPtr handle) : base(handle)
 		{
+			Initialize();
 		}
 
 		public EditorView()
 		{
+			Initialize();
+		}
+
+		void Initialize()
+		{
+			Editor = new Editor();
 		}
 
 		public override bool IsFlipped
@@ -49,9 +56,28 @@ namespace BoxEditor.Mac
 				return true;
 			}
 		}
+		NSTrackingArea lastMouseMoveArea;
+		public override void UpdateTrackingAreas()
+		{
+			base.UpdateTrackingAreas();
+			var options =
+				NSTrackingAreaOptions.ActiveInKeyWindow
+				| NSTrackingAreaOptions.InVisibleRect
+				| NSTrackingAreaOptions.MouseEnteredAndExited
+				| NSTrackingAreaOptions.MouseMoved
+				;
+			var mouseMoveArea = new NSTrackingArea(Bounds, options, this, null);
+			if (lastMouseMoveArea != null)
+			{
+				RemoveTrackingArea(lastMouseMoveArea);
+			}
+			lastMouseMoveArea = mouseMoveArea;
+			AddTrackingArea(mouseMoveArea);
+		}
 
 		void Editor_Redraw()
 		{
+			//Debug.WriteLine("REDRAW");
 			SetNeedsDisplayInRect(Bounds);
 		}
 
@@ -62,8 +88,6 @@ namespace BoxEditor.Mac
 			var canvas = new CGContextCanvas(context);
 			editor.Draw(canvas, dirtyRect.GetRect());
 		}
-
-		nint lastDragEv = 0;
 
 		TouchEvent GetTouchEvent(NSEvent theEvent)
 		{
@@ -77,18 +101,22 @@ namespace BoxEditor.Mac
 			};
 		}
 
+		public override void MouseDown(NSEvent theEvent)
+		{
+			base.MouseDown(theEvent);
+			editor.TouchBegan(GetTouchEvent(theEvent));
+		}
+
 		public override void MouseDragged(NSEvent theEvent)
 		{
 			base.MouseMoved(theEvent);
-			var ev = theEvent.EventNumber;
-			if (lastDragEv != ev)
-			{
-				lastDragEv = ev;
-				editor.TouchBegan(GetTouchEvent(theEvent));
-			}
-			else {
-				editor.TouchMoved(GetTouchEvent(theEvent));
-			}
+			editor.TouchMoved(GetTouchEvent(theEvent));
+		}
+
+		public override void MouseMoved(NSEvent theEvent)
+		{
+			base.MouseMoved(theEvent);
+			editor.MouseMoved(GetTouchEvent(theEvent));
 		}
 
 		public override void MouseUp(NSEvent theEvent)
