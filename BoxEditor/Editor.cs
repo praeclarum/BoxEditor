@@ -412,11 +412,9 @@ namespace BoxEditor
             }
             foreach (var a in diagram.Arrows)
             {
-                canvas.DrawLine(
-					a.Start.Port.Point,
-					a.End.Port.Point,
-					a.Style.LineColor,
-					a.Style.LineWidth);
+				var p = a.GetPath();
+				p.Pen = new Pen(a.Style.LineColor, a.Style.LineWidth);
+				p.Draw(canvas);
 				ArrowDrawn?.Invoke(a, canvas);
             }
 			foreach (var b in diagram.Boxes)
