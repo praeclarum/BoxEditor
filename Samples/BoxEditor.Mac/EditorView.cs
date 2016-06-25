@@ -62,6 +62,46 @@ namespace BoxEditor.Mac
 			var canvas = new CGContextCanvas(context);
 			editor.Draw(canvas, dirtyRect.GetRect());
 		}
+
+		nint lastDragEv = 0;
+
+		TouchEvent GetTouchEvent(NSEvent theEvent)
+		{
+			var winloc = theEvent.LocationInWindow;
+			var loc = this.ConvertPointToView(winloc, this);
+			loc.Y = Bounds.Height - loc.Y;
+			return new TouchEvent()
+			{
+				TouchId = theEvent.EventNumber,
+				Location = new Point(loc.X, loc.Y),
+			};
+		}
+
+		public override void MouseDragged(NSEvent theEvent)
+		{
+			base.MouseMoved(theEvent);
+			var ev = theEvent.EventNumber;
+			if (lastDragEv != ev)
+			{
+				lastDragEv = ev;
+				editor.TouchBegan(GetTouchEvent(theEvent));
+			}
+			else {
+				editor.TouchMoved(GetTouchEvent(theEvent));
+			}
+		}
+
+		public override void MouseUp(NSEvent theEvent)
+		{
+			base.MouseUp(theEvent);
+			editor.TouchEnded(GetTouchEvent(theEvent));
+		}
+
+		public override void MouseExited(NSEvent theEvent)
+		{
+			base.MouseUp(theEvent);
+			editor.TouchCanceled(GetTouchEvent(theEvent));
+		}
 	}
 }
 

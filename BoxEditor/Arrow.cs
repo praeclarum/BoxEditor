@@ -2,23 +2,47 @@
 
 namespace BoxEditor
 {
-    public class Arrow
+	public class Arrow : ISelectable
     {
         public readonly object Value;
 		public readonly ArrowStyle Style;
-		public readonly State State;
-		public readonly PortRef From;
-        public readonly PortRef To;
+		public readonly PortRef Start;
+        public readonly PortRef End;
 
-		public Arrow(object value, ArrowStyle style, State state, PortRef @from, PortRef @to)
+		public Box StartBox => Start.Box;
+		public Box EndBox => End.Box;
+
+		public Arrow(object value, ArrowStyle style, PortRef start, PortRef end)
         {
             Value = value;
 			Style = style;
-			State = state;
-            From = @from;
-            To = @to;
+            Start = start;
+            End = end;
         }
-    }
+
+		public Path GetPath()
+		{
+			var startCenter = StartBox.Frame.Center;
+			var endCenter = EndBox.Frame.Center;
+
+			Point s, e;
+
+			s = Start.Port.Point;
+			e = End.Port.Point;
+
+			var sDir = (s - startCenter).Normalized;
+			var eDir = (e - endCenter).Normalized;
+
+			var dist = s.DistanceTo(e);
+			var c1 = s + sDir * (dist / 3);
+			var c2 = e + eDir * (dist / 3);
+
+			var p = new Path();
+			p.MoveTo(s);
+			p.CurveTo(c1, c2, e);
+			return p;
+		}
+	}
 
 	public class ArrowStyle
 	{

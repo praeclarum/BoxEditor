@@ -64,7 +64,6 @@ namespace BoxEditor.Mac
 					var v = (string)o;
 					var b = new BoxBuilder();
 					b.Value = v;
-					b.State = State.Selected;
 					b.Frame = new NGraphics.Rect(
 						100 + (v[0] - 'A') * 125,
 						100 + (v[1] - 'A') * 125,
@@ -81,7 +80,7 @@ namespace BoxEditor.Mac
 					var c = (Tuple<Tuple<string, string>,Tuple<string, string>>)o;
 					var fp = f(c.Item1.Item1, c.Item1.Item2);
 					var tp = f(c.Item2.Item1, c.Item2.Item2);
-					return new Arrow(o, ArrowStyle.Default, State.Selected, fp, tp);
+					return new Arrow(o, ArrowStyle.Default, fp, tp);
 				});
 
 			editorView.Editor.BoxDrawn += (b, c) =>

@@ -46,7 +46,26 @@ namespace BoxEditor
 
             return new Diagram(boxes, arrows, style);
         }
-    }
+
+		public IEnumerable<Box> HitTestBoxes(Point point)
+		{
+			return Boxes.Where(x => x.HitTest(point)).Reverse().ToList();
+		}
+
+		public IEnumerable<Arrow> HitTestArrows(Point point, double viewToDiagramScale)
+		{
+			var maxDist = viewToDiagramScale * 22;
+			var q = from a in Arrows
+					let p = a.GetPath()
+					let d = p.DistanceTo(point)
+	                where d < a.Style.LineWidth / 2 + maxDist
+					orderby d ascending
+					select a;
+			return q.ToList();
+		}
+
+
+	}
 
 	public class DiagramStyle
 	{
