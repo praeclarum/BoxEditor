@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
+using NGraphics;
 
 namespace BoxEditor
 {
@@ -10,17 +11,20 @@ namespace BoxEditor
     {
         public readonly ImmutableArray<Box> Boxes;
         public readonly ImmutableArray<Arrow> Arrows;
+		public readonly DiagramStyle Style;
 
         public static Diagram Empty =
-            new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty);
+			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
 
-        public Diagram(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+		public Diagram(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows, DiagramStyle style)
         {
             Boxes = boxes;
             Arrows = arrows;
+			Style = style;
         }
 
         public static Diagram Create(
+			DiagramStyle style,
             IEnumerable<object> boxValues,
             IEnumerable<object> arrowValues,
             Func<object, Box> getBox,
@@ -40,7 +44,20 @@ namespace BoxEditor
 
             var arrows = arrowValues.Select (o => getArrow(portF, o)).ToImmutableArray();
 
-            return new Diagram(boxes, arrows);
+            return new Diagram(boxes, arrows, style);
         }
     }
+
+	public class DiagramStyle
+	{
+		public readonly Color BackgroundColor;
+
+		public static readonly DiagramStyle Default = new DiagramStyle(
+			Color.FromWhite(236/255.0, 1));
+
+		public DiagramStyle(Color backgroundColor)
+		{
+			BackgroundColor = backgroundColor;
+		}
+	}
 }

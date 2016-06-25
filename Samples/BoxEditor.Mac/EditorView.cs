@@ -60,8 +60,7 @@ namespace BoxEditor.Mac
 			base.DrawRect(dirtyRect);
 			var context = NSGraphicsContext.CurrentContext.GraphicsPort;
 			var canvas = new CGContextCanvas(context);
-			canvas.DrawEllipse(new Rect(0, 0, 100, 100), Colors.Green);
-			editor.Draw(canvas);
+			editor.Draw(canvas, dirtyRect.GetRect());
 		}
 	}
 }

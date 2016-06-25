@@ -13,13 +13,6 @@ namespace BoxEditor.Mac
 			// Add your subclass-specific initialization here.
 		}
 
-		public override void WindowControllerDidLoadNib(NSWindowController windowController)
-		{
-			base.WindowControllerDidLoadNib(windowController);
-			((ViewController)windowController.ContentViewController).Document = this;
-			// Add any code here that needs to be executed once the windowController has loaded the document's window.
-		}
-
 		[Export("autosavesInPlace")]
 		public static bool AutosaveInPlace()
 		{
@@ -29,7 +22,9 @@ namespace BoxEditor.Mac
 		public override void MakeWindowControllers()
 		{
 			// Override to return the Storyboard file name of the document.
-			AddWindowController((NSWindowController)NSStoryboard.FromName("Main", null).InstantiateControllerWithIdentifier("Document Window Controller"));
+			var windowController = (NSWindowController)NSStoryboard.FromName("Main", null).InstantiateControllerWithIdentifier("Document Window Controller");
+			((ViewController)windowController.ContentViewController).Document = this;
+			base.AddWindowController(windowController);
 		}
 
 		public override NSData GetAsData(string typeName, out NSError outError)

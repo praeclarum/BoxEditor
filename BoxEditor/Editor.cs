@@ -25,12 +25,11 @@ namespace BoxEditor
             }
         }
 
-        //public event Action<Box> MovedBox;
         public event Action Redraw;
-
-        public Editor()
-        {
-        }
+		public event Action<Rect, ICanvas> BackgroundDrawn;
+		public event Action<Box, ICanvas> BoxDrawn;
+		public event Action<Box, Port, ICanvas> PortDrawn;
+		public event Action<Arrow, ICanvas> ArrowDrawn;
 
         public void ResizeView(Size newViewSize)
         {
@@ -57,20 +56,45 @@ namespace BoxEditor
             Redraw?.Invoke();
         }
 
-        public void Draw(ICanvas canvas)
+        public void Draw(ICanvas canvas, Rect dirtyFrame)
         {
+			if (diagram.Style.BackgroundColor.A > 0)
+			{
+				canvas.FillRectangle(dirtyFrame, diagram.Style.BackgroundColor);
+			}
+			BackgroundDrawn?.Invoke(dirtyFrame, canvas);
             foreach (var b in diagram.Boxes)
             {
-                canvas.FillRectangle(b.Frame, Colors.White);
-                canvas.DrawRectangle(b.Frame, Colors.Black);
+				if (b.Style.BackgroundColor.A > 0)
+				{
+					canvas.FillRectangle(b.Frame, b.Style.BackgroundColor);
+				}
+				if (b.Style.BorderColor.A > 0)
+				{
+					canvas.DrawRectangle(b.Frame, b.Style.BorderColor, b.Style.BorderWidth);
+				}
+				BoxDrawn?.Invoke(b, canvas);
                 foreach (var p in b.Ports)
                 {
-                    canvas.FillRectangle(p.Frame, Colors.Gray);
+                    if (p.Style.BackgroundColor.A > 0)
+					{
+						canvas.FillRectangle(p.Frame, p.Style.BackgroundColor);
+					}
+					if (p.Style.BorderColor.A > 0)
+					{
+						canvas.DrawRectangle(p.Frame, p.Style.BorderColor, p.Style.BorderWidth);
+					}
+					PortDrawn?.Invoke(b, p, canvas);
                 }
             }
             foreach (var a in diagram.Arrows)
             {
-                canvas.DrawLine(a.From.Port.Frame.Center, a.To.Port.Frame.Center, Colors.Red);
+                canvas.DrawLine(
+					a.From.Port.Frame.Center,
+					a.To.Port.Frame.Center,
+					a.Style.LineColor,
+					a.Style.LineWidth);
+				ArrowDrawn?.Invoke(a, canvas);
             }
         }
     }

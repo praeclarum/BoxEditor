@@ -11,12 +11,14 @@ namespace BoxEditor
     {
         public readonly object Value;
         public readonly Rect Frame;
+		public readonly BoxStyle Style;
         public readonly ImmutableArray<Port> Ports;
 
-        public Box(object value, Rect frame, ImmutableArray<Port> ports)
+		public Box(object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
         {
             Value = value;
             Frame = frame;
+			Style = style;
             Ports = ports;
         }
     }
@@ -26,15 +28,32 @@ namespace BoxEditor
         public object Value;
 		public Rect Frame;
         public List<Port> Ports = new List<Port>();
+		public BoxStyle Style = BoxStyle.Default;
 
-        public void AddPort(string id, Rect frame)
+		public void AddPort(string id, Rect frame, PortStyle style)
         {
-            Ports.Add(new Port(id, frame));
+            Ports.Add(new Port(id, frame, style));
         }
 
         public Box ToBox()
         {
-            return new Box(Value, Frame, Ports.ToImmutableArray());
+            return new Box(Value, Frame, Style, Ports.ToImmutableArray());
         }
     }
+
+	public class BoxStyle
+	{
+		public readonly Color BackgroundColor;
+		public readonly Color BorderColor;
+		public readonly double BorderWidth;
+
+		public static readonly BoxStyle Default = new BoxStyle(Colors.White, Colors.Black, 1);
+
+		public BoxStyle(Color backgroundColor, Color borderColor, double borderWidth)
+		{
+			BackgroundColor = backgroundColor;
+			BorderColor = borderColor;
+			BorderWidth = borderWidth;
+		}
+	}
 }
