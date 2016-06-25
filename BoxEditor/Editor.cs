@@ -105,6 +105,8 @@ namespace BoxEditor
 					 orderby h.Item2
 					 select Tuple.Create(b, h.Item1)).FirstOrDefault();
 
+				var arrowHit = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault();
+
 				//				Console.WriteLine ("SELS = {0}", selection.Count);
 				if (handleHit != null)
 				{
@@ -125,6 +127,10 @@ namespace BoxEditor
 					dragBoxLastDiagramLoc = diagramLoc;
 					dragBoxHandle = 0;
 					dragBoxHandleBox = null;
+				}
+				else if (arrowHit != null)
+				{
+					Select(new[] { arrowHit });
 				}
 				else {
 					touchGesture = TouchGesture.None;
@@ -203,18 +209,13 @@ namespace BoxEditor
 		{
 			var diagramLoc = ViewToDiagram(touch.Location);
 
-			var boxHit = diagram.HitTestBoxes(diagramLoc).FirstOrDefault();
-
 			//Debug.WriteLine($"MOUSE {touch} b={boxHit}");
 
-			var newHover = hoverSelection;
+			ISelectable newHover = diagram.HitTestBoxes(diagramLoc).FirstOrDefault();
 
-			if (boxHit != null)
+			if (newHover == null)
 			{
-				newHover = boxHit;
-			}
-			else {
-				newHover = null;
+				newHover = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault();
 			}
 
 			if (newHover != hoverSelection)
@@ -469,6 +470,15 @@ namespace BoxEditor
 				{
 					var f = b.Frame.GetInflated(2, 2);
 					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, 2);
+				}
+				else {
+					var a = hoverSelection as Arrow;
+					if (a != null)
+					{
+						var path = a.GetPath();
+						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.LineWidth);
+						path.Draw(canvas);
+					}
 				}
 			}
 
