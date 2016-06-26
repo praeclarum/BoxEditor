@@ -51,6 +51,21 @@ namespace BoxEditor
 			return new Diagram(newBoxes, newArrows, Style);
 		}
 
+		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> box, Point offset)
+		{
+			var d = this;
+			var snapOffset = offset;
+			var newBs = new List<Box>();
+			foreach (var b in box)
+			{
+				var nb = b.Move(snapOffset);
+				d = d.UpdateBox(b, nb);
+				newBs.Add(nb);
+			}
+			var guides = ImmutableArray<DragGuide>.Empty;
+			return Tuple.Create(d, guides, newBs.ToImmutableArray());
+		}
+
 		public static Diagram Create(
 			DiagramStyle style,
             IEnumerable<object> boxValues,
@@ -73,7 +88,7 @@ namespace BoxEditor
             var arrows = arrowValues.Select (o => getArrow(portF, o)).ToImmutableArray();
 
             return new Diagram(boxes, arrows, style);
-        }
+		}
 
 		public IEnumerable<Box> HitTestBoxes(Point point)
 		{
@@ -92,7 +107,18 @@ namespace BoxEditor
 			return q.ToList();
 		}
 
-}
+	}
+
+	public class DragGuide
+	{
+		public readonly Point Start;
+		public readonly Point End;
+		public DragGuide (Point start, Point end)
+		{
+			Start = start;
+			End = end;
+		}
+	}
 
 	public class DiagramStyle
 	{
@@ -100,23 +126,27 @@ namespace BoxEditor
 		public readonly Color HandleBackgroundColor;
 		public readonly Color HandleBorderColor;
 		public readonly Color HoverSelectionColor;
+		public readonly Color DragGuideColor;
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
 			Color.FromWhite(236/255.0, 1),
 			Colors.White,
 			Colors.Black,
-			new Color("#45C0FE"));
+			new Color("#45C0FE"),
+			Colors.Blue);
 
 		public DiagramStyle(
 			Color backgroundColor, 
 			Color handleBackgroundColor, 
 			Color handleBorderColor, 
-			Color hoverSelectionColor)
+			Color hoverSelectionColor,
+			Color dragGuideColor)
 		{
 			BackgroundColor = backgroundColor;
 			HandleBackgroundColor = handleBackgroundColor;
 			HandleBorderColor = handleBorderColor;
 			HoverSelectionColor = hoverSelectionColor;
+			DragGuideColor = dragGuideColor;
 		}
 	}
 }

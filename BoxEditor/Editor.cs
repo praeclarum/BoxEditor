@@ -39,12 +39,17 @@ namespace BoxEditor
 		void UpdateBox(Box b, Box newb)
 		{
 			var newd = diagram.UpdateBox(b, newb);
-			selection = selection.Replace(b, newb);
-			if (hoverSelection == b) hoverSelection = newb;
+			OnBoxChanged(b, newb);
 			UpdateDiagram(newd);
 		}
 
-        public void ResizeView(Size newViewSize)
+		void OnBoxChanged(Box b, Box newb)
+		{
+			selection = selection.Replace(b, newb);
+			if (hoverSelection == b) hoverSelection = newb;
+		}
+
+		public void ResizeView(Size newViewSize)
         {
         }
 
@@ -93,7 +98,12 @@ namespace BoxEditor
 		Point dragBoxLastDiagramLoc = Point.Zero;
 		bool dragBoxStartSelected = false;
 		int dragBoxHandle = 0;
+		Diagram dragDiagram = Diagram.Empty;
+		ImmutableArray<Box> dragBoxes = ImmutableArray<Box>.Empty;
+		ImmutableArray<Box> dragLastBoxes = ImmutableArray<Box>.Empty;
 		Box dragBoxHandleBox = null;
+
+		ImmutableArray<DragGuide> dragGuides = ImmutableArray<DragGuide>.Empty;
 
 		double handleSize = 8;
 
@@ -133,20 +143,42 @@ namespace BoxEditor
 					dragBoxStartSelected = IsSelected(boxHit);
 					if (!dragBoxStartSelected)
 					{
-						Select(new[] { boxHit });
+						if (touch.IsShiftDown)
+						{
+							if (!selection.Contains(boxHit)) {
+								Select(selection.Add(boxHit));
+							}
+						}
+						else {
+							Select(new[] { boxHit });
+						}
 						lastEditMenuObject = null;
 					}
 					touchGesture = TouchGesture.DragSelection;
 					dragBoxLastDiagramLoc = diagramLoc;
+					dragBoxes = selection.OfType<Box>().ToImmutableArray();
+					dragLastBoxes = dragBoxes;
+					dragDiagram = diagram;
 					dragBoxHandle = 0;
 					dragBoxHandleBox = null;
 				}
 				else if (arrowHit != null)
 				{
-					Select(new[] { arrowHit });
+					if (touch.IsShiftDown)
+					{
+						if (!selection.Contains(arrowHit))
+						{
+							Select(selection.Add(arrowHit));
+						}
+					}
+					else {
+						Select(new[] { arrowHit });
+					}
 				}
 				else {
 					touchGesture = TouchGesture.None;
+					dragBoxes = ImmutableArray<Box>.Empty;
+					dragDiagram = Diagram.Empty;
 					SelectNone();
 				}
 			}
@@ -183,13 +215,16 @@ namespace BoxEditor
 				case TouchGesture.DragSelection:
 					{
 						var loc = ViewToDiagram(activeTouches.Values.First());
-						foreach (var b in selection.OfType<Box>())
+						var d = loc - dragBoxLastDiagramLoc;
+						var mr = dragDiagram.MoveBoxes(dragBoxes, d);
+						var newd = mr.Item1;
+						dragGuides = mr.Item2;
+						UpdateDiagram(newd);
+						foreach (var b in dragLastBoxes.Zip(mr.Item3, (x, y) => Tuple.Create(x, y)))
 						{
-							var d = loc - dragBoxLastDiagramLoc;
-							var newb = b.Move(d);
-							UpdateBox(b, newb);
+							OnBoxChanged(b.Item1, b.Item2);
 						}
-						dragBoxLastDiagramLoc = loc;
+						dragLastBoxes = mr.Item3;
 						Redraw?.Invoke();
 					}
 					break;
@@ -213,12 +248,18 @@ namespace BoxEditor
 		public void TouchEnded(TouchEvent touch)
         {
 			touchGesture = TouchGesture.None;
+			dragBoxes = ImmutableArray<Box>.Empty;
+			dragLastBoxes = ImmutableArray<Box>.Empty;
+			dragDiagram = Diagram.Empty;
 			activeTouches.Remove(touch.TouchId);
 		}
 
 		public void TouchCanceled(TouchEvent touch)
         {
 			touchGesture = TouchGesture.None;
+			dragBoxes = ImmutableArray<Box>.Empty;
+			dragLastBoxes = ImmutableArray<Box>.Empty;
+			dragDiagram = Diagram.Empty;
 			activeTouches.Remove(touch.TouchId);
 		}
 
@@ -499,6 +540,14 @@ namespace BoxEditor
 			}
 
 			//
+			// Drag guides
+			//
+			foreach (var g in dragGuides)
+			{
+				canvas.DrawLine(g.Start, g.End, diagram.Style.DragGuideColor, viewToDiagram.A);
+			}
+
+			//
 			// Untransform
 			//
 			if (needsTx)
@@ -544,6 +593,7 @@ namespace BoxEditor
 	{
 		public long TouchId;
 		public Point Location;
+		public bool IsShiftDown;
 
 		public override string ToString()
 		{

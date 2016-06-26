@@ -94,10 +94,13 @@ namespace BoxEditor.Mac
 			var winloc = theEvent.LocationInWindow;
 			var loc = this.ConvertPointToView(winloc, this);
 			loc.Y = Bounds.Height - loc.Y;
-			return new TouchEvent()
+			var mods = theEvent.ModifierFlags;
+			var shift = mods.HasFlag(NSEventModifierMask.ShiftKeyMask);
+			return new TouchEvent
 			{
 				TouchId = theEvent.EventNumber,
 				Location = new Point(loc.X, loc.Y),
+				IsShiftDown = shift,
 			};
 		}
 
