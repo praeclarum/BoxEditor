@@ -54,17 +54,24 @@ namespace BoxEditor
 
 		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset)
 		{
+			if (boxes.Length == 0)
+				return Tuple.Create(this, ImmutableArray<DragGuide>.Empty, boxes);
+			
 			var d = this;
 
-			var staticGuides =
-				Boxes.Where(x => !boxes.Contains(x))
-				     .SelectMany(b => b.GetDragGuides(Point.Zero))
-					 .Distinct()
-					 .ToImmutableArray();
+			var b0 = boxes[0];
+			var b0c = b0.Frame.Center + offset;
+
 			var moveGuides =
-				boxes.SelectMany(b => b.GetDragGuides(offset))
-				     .Distinct()
-				     .ToImmutableArray();			
+				boxes.SelectMany(b => b.GetDragGuides(offset, Boxes.IndexOf(b)))
+				     .ToImmutableArray();
+			;
+			var staticGuides =
+				Boxes.Select((x, i) => Tuple.Create(x, i))
+				     .Where(x => !boxes.Contains(x.Item1))
+				     .OrderBy(x => x.Item1.Frame.Center.DistanceTo(b0c))
+				     .SelectMany(x => x.Item1.GetDragGuides(Point.Zero, x.Item2))
+					 .ToImmutableArray();
 
 			var compares = new List<Tuple<DragGuide, DragGuide, double>>();
 			foreach (var m in moveGuides)
@@ -84,27 +91,21 @@ namespace BoxEditor
 
 			var minDist = 8.0;
 
-			var verts =
+			var vert =
 				compares.Where(x => x.Item1.IsVertical && Math.Abs(x.Item3) < minDist)
 				        .OrderBy(x => Math.Abs(x.Item3))
-				        .Take(1)
-				        .ToList()
+				        .FirstOrDefault()
 				        ;
 
-			var horzs =
+			var horz =
 				compares.Where(x => !x.Item1.IsVertical && Math.Abs(x.Item3) < minDist)
 						.OrderBy(x => Math.Abs(x.Item3))
-						.Take(1)
-				        .ToList()
+				        .FirstOrDefault()
 						;
 			
 			var snapOffset = new Point(
-				verts.Count > 0 ? verts[0].Item3 : 0,
-				horzs.Count > 0 ? horzs[0].Item3 : 0);
-
-			var guides = verts.Select(x => x.Item2)
-			                  .Concat(horzs.Select(x => x.Item2))
-			                  .ToImmutableArray();
+				vert != null ? vert.Item3 : 0,
+				horz != null ? horz.Item3 : 0);
 
 			var newBs = new List<Box>();
 			foreach (var b in boxes)
@@ -117,7 +118,27 @@ namespace BoxEditor
 
 			d = d.PreventOverlaps(newBsI, offset);
 
-			return Tuple.Create(d, guides, newBsI);
+			var guides = new List<DragGuide>();
+			if (vert != null)
+			{
+				var mf = d.Boxes[vert.Item1.Tag].Frame;
+				var si = vert.Item2.Tag;
+				var sf = d.Boxes[si].Frame;
+				var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == vert.Item2.Source);
+				//Debug.WriteLine($"V G.S={g.Source}");
+				guides.Add(g.Clip(sf.Union(mf)));
+			}
+			if (horz != null)
+			{
+				var mf = d.Boxes[horz.Item1.Tag].Frame;
+				var si = horz.Item2.Tag;
+				var sf = d.Boxes[si].Frame;
+				var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == horz.Item2.Source);
+				//Debug.WriteLine($"H G.S={g.Source}");
+				guides.Add(g.Clip(sf.Union(mf)));
+			}
+
+			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);
 		}
 
 		public Diagram PreventOverlaps(ImmutableArray<Box> staticBoxes, Point staticOffset)
@@ -269,8 +290,8 @@ namespace BoxEditor
 
 	public enum DragGuideSource
 	{
-		Center,
-		Port,
+		CenterV,
+		CenterH,
 		LeftEdge,
 		RightEdge,
 		TopEdge,
@@ -279,6 +300,10 @@ namespace BoxEditor
 		RightMargin,
 		TopMargin,
 		BottomMargin,
+		PortVS = 1000,
+		PortVE = 1999,
+		PortHS = 2000,
+		PortHE = 2999,
 	}
 
 	public class DragGuide
@@ -287,33 +312,59 @@ namespace BoxEditor
 		public readonly Point End;
 		public readonly bool IsVertical;
 		public readonly DragGuideSource Source;
+		public readonly int Tag;
 		public double Offset => IsVertical ? Start.X : Start.Y;
-		public DragGuide (Point start, Point end, DragGuideSource source)
+		public DragGuide (Point start, Point end, DragGuideSource source, int sourceFrame)
 		{
 			Start = start;
 			End = end;
 			Source = source;
+			Tag = sourceFrame;
 			IsVertical = Math.Abs(end.X - start.X) < Math.Abs(end.Y - start.Y);
 		}
-		public static DragGuide Vertical(double x, DragGuideSource source)
+		public static DragGuide Vertical(double x, DragGuideSource source, int sourceFrame)
 		{
-			return new DragGuide(new Point(x, -1e12), new Point(x, 1e12), source);
+			return new DragGuide(new Point(x, -1e12), new Point(x, 1e12), source, sourceFrame);
 		}
-		public static DragGuide Horizontal(double y, DragGuideSource source)
+		public static DragGuide Horizontal(double y, DragGuideSource source, int sourceFrame)
 		{
-			return new DragGuide(new Point(-1e12, y), new Point(1e12, y), source);
+			return new DragGuide(new Point(-1e12, y), new Point(1e12, y), source, sourceFrame);
 		}
 		public bool CanCompareTo(DragGuide o)
 		{
 			if (IsVertical != o.IsVertical) return false;
-			return (Source == DragGuideSource.Center && o.Source == DragGuideSource.Center)
-				|| (Source == DragGuideSource.Port && o.Source == DragGuideSource.Port)
+			return (Source == DragGuideSource.CenterV && o.Source == DragGuideSource.CenterV)
+				|| (Source == DragGuideSource.CenterH && o.Source == DragGuideSource.CenterH)
+				|| (Source >= DragGuideSource.PortVS && DragGuideSource.PortVE >= Source &&
+				    o.Source >= DragGuideSource.PortVS && DragGuideSource.PortVE >= o.Source)
+				|| (Source >= DragGuideSource.PortHS && DragGuideSource.PortHE >= Source &&
+					o.Source >= DragGuideSource.PortHS && DragGuideSource.PortHE >= o.Source)
 				|| (Source == DragGuideSource.LeftMargin && o.Source == DragGuideSource.RightEdge)
 				|| (Source == DragGuideSource.RightMargin && o.Source == DragGuideSource.LeftEdge)
 				|| (Source == DragGuideSource.TopMargin && o.Source == DragGuideSource.BottomEdge)
 				|| (Source == DragGuideSource.BottomMargin && o.Source == DragGuideSource.TopEdge)
 				;
 
+		}
+		public DragGuide Clip(Rect clipRect)
+		{
+			var s = Start;
+			var e = End;
+			if (IsVertical)
+			{
+				var mn = Math.Max(Math.Min(Start.Y, End.Y), clipRect.Top);
+				var mx = Math.Min(Math.Max(Start.Y, End.Y), clipRect.Bottom);
+				s = new Point(s.X, mn);
+				e = new Point(s.X, mx);
+			}
+			else
+			{
+				var mn = Math.Max(Math.Min(Start.X, End.X), clipRect.Left);
+				var mx = Math.Min(Math.Max(Start.X, End.X), clipRect.Right);
+				s = new Point(mn, s.Y);
+				e = new Point(mx, s.Y);
+			}
+			return new DragGuide(s, e, Source, Tag);				
 		}
 		public override bool Equals(object obj)
 		{

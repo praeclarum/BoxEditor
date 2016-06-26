@@ -110,31 +110,33 @@ namespace BoxEditor
 			return WithFrame(newFrame);
 		}
 
-		public IEnumerable<DragGuide> GetDragGuides(Point offset)
+		public IEnumerable<DragGuide> GetDragGuides(Point offset, int boxIndex)
 		{
-			yield return DragGuide.Vertical(Frame.Center.X + offset.X, DragGuideSource.Center);
-			yield return DragGuide.Horizontal(Frame.Center.Y + offset.Y, DragGuideSource.Center);
+			yield return DragGuide.Vertical(Frame.Center.X + offset.X, DragGuideSource.CenterV, boxIndex);
+			yield return DragGuide.Horizontal(Frame.Center.Y + offset.Y, DragGuideSource.CenterH, boxIndex);
 			var mx = Style.Margin.Width;
 			var my = Style.Margin.Height;
 			if (mx > 0)
 			{
-				yield return DragGuide.Vertical(Frame.Left + offset.X - mx, DragGuideSource.LeftMargin);
-				yield return DragGuide.Vertical(Frame.Right + offset.X + mx, DragGuideSource.RightMargin);
+				yield return DragGuide.Vertical(Frame.Left + offset.X - mx, DragGuideSource.LeftMargin, boxIndex);
+				yield return DragGuide.Vertical(Frame.Right + offset.X + mx, DragGuideSource.RightMargin, boxIndex);
 			}
 			if (my > 0)
 			{
-				yield return DragGuide.Horizontal(Frame.Top + offset.Y - my, DragGuideSource.TopMargin);
-				yield return DragGuide.Horizontal(Frame.Bottom + offset.Y + my, DragGuideSource.BottomMargin);
+				yield return DragGuide.Horizontal(Frame.Top + offset.Y - my, DragGuideSource.TopMargin, boxIndex);
+				yield return DragGuide.Horizontal(Frame.Bottom + offset.Y + my, DragGuideSource.BottomMargin, boxIndex);
 			}
-			yield return DragGuide.Vertical(Frame.Left + offset.X, DragGuideSource.LeftEdge);
-			yield return DragGuide.Vertical(Frame.Right + offset.X, DragGuideSource.RightEdge);
-			yield return DragGuide.Horizontal(Frame.Top + offset.Y, DragGuideSource.TopEdge);
-			yield return DragGuide.Horizontal(Frame.Bottom + offset.Y, DragGuideSource.BottomEdge);
-			foreach (var p in Ports)
+			yield return DragGuide.Vertical(Frame.Left + offset.X, DragGuideSource.LeftEdge, boxIndex);
+			yield return DragGuide.Vertical(Frame.Right + offset.X, DragGuideSource.RightEdge, boxIndex);
+			yield return DragGuide.Horizontal(Frame.Top + offset.Y, DragGuideSource.TopEdge, boxIndex);
+			yield return DragGuide.Horizontal(Frame.Bottom + offset.Y, DragGuideSource.BottomEdge, boxIndex);
+			for (int i = 0; i < Ports.Length; i++)
 			{
-				var c = p.GetFrame(this).Center + offset;
-				yield return DragGuide.Vertical(c.X, DragGuideSource.Port);
-				yield return DragGuide.Horizontal(c.Y, DragGuideSource.Port);
+				var p = Ports[i];
+				var f = p.GetFrame(this);
+				var c = f.Center + offset;
+				yield return DragGuide.Vertical(c.X, DragGuideSource.PortVS + i, boxIndex);
+				yield return DragGuide.Horizontal(c.Y, DragGuideSource.PortHS + i, boxIndex);
 			}
 		}
 	}
