@@ -48,8 +48,7 @@ namespace BoxEditor
 			p.CurveTo(c1, c2, e);
 			return p;
 		}
-
-}
+	}
 
 	public class ArrowStyle
 	{
