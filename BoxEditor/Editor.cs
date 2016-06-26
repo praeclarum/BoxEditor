@@ -251,7 +251,9 @@ namespace BoxEditor
 			dragBoxes = ImmutableArray<Box>.Empty;
 			dragLastBoxes = ImmutableArray<Box>.Empty;
 			dragDiagram = Diagram.Empty;
+			dragGuides = ImmutableArray<DragGuide>.Empty;
 			activeTouches.Remove(touch.TouchId);
+			Redraw?.Invoke();
 		}
 
 		public void TouchCanceled(TouchEvent touch)
@@ -260,7 +262,9 @@ namespace BoxEditor
 			dragBoxes = ImmutableArray<Box>.Empty;
 			dragLastBoxes = ImmutableArray<Box>.Empty;
 			dragDiagram = Diagram.Empty;
+			dragGuides = ImmutableArray<DragGuide>.Empty;
 			activeTouches.Remove(touch.TouchId);
+			Redraw?.Invoke();
 		}
 
 		public void MouseMoved(TouchEvent touch)

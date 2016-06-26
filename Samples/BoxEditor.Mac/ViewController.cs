@@ -86,7 +86,7 @@ namespace BoxEditor.Mac
 			editorView.Editor.BoxDrawn += (b, c) =>
 			{
 				var v = (string)b.Value;
-				c.DrawText(v, b.Frame.BottomLeft+new Point(8, -8), new Font("Helvetica-Regular", 20), brush: new SolidBrush(Colors.Red));
+				c.DrawText(v, b.Frame.BottomLeft+new Point(8, -8), new Font("Helvetica-Regular", 20), brush: new SolidBrush(Colors.Gray));
 			};
 
 			editorView.Editor.Diagram = d;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using NGraphics;
@@ -51,18 +52,67 @@ namespace BoxEditor
 			return new Diagram(newBoxes, newArrows, Style);
 		}
 
-		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> box, Point offset)
+		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset)
 		{
 			var d = this;
-			var snapOffset = offset;
-			var newBs = new List<Box>();
-			foreach (var b in box)
+
+			var staticGuides =
+				Boxes.Where(x => !boxes.Contains(x))
+				     .SelectMany(b => b.GetDragGuides(Point.Zero))
+					 .Distinct()
+					 .ToImmutableArray();
+			var moveGuides =
+				boxes.SelectMany(b => b.GetDragGuides(offset))
+				     .Distinct()
+				     .ToImmutableArray();			
+
+			var compares = new List<Tuple<DragGuide, DragGuide, double>>();
+			foreach (var m in moveGuides)
 			{
-				var nb = b.Move(snapOffset);
+				foreach (var s in staticGuides)
+				{
+					if (m.CanCompareTo(s))
+					{
+						compares.Add(Tuple.Create(m, s, s.Offset - m.Offset));
+					}
+				}
+			}
+
+			//Debug.WriteLine($"{staticGuides.Length} STATIC GUIDES");
+			//Debug.WriteLine($"{moveGuides.Length} MOVE GUIDES");
+			//Debug.WriteLine($"{compares.Count} COMPARES");
+
+			var minDist = 8.0;
+
+			var verts =
+				compares.Where(x => x.Item1.IsVertical && Math.Abs(x.Item3) < minDist)
+				        .OrderBy(x => Math.Abs(x.Item3))
+				        .Take(1)
+				        .ToList()
+				        ;
+
+			var horzs =
+				compares.Where(x => !x.Item1.IsVertical && Math.Abs(x.Item3) < minDist)
+						.OrderBy(x => Math.Abs(x.Item3))
+						.Take(1)
+				        .ToList()
+						;
+			
+			var snapOffset = new Point(
+				verts.Count > 0 ? verts[0].Item3 : 0,
+				horzs.Count > 0 ? horzs[0].Item3 : 0);
+
+			var guides = verts.Select(x => x.Item2)
+			                  .Concat(horzs.Select(x => x.Item2))
+			                  .ToImmutableArray();
+
+			var newBs = new List<Box>();
+			foreach (var b in boxes)
+			{
+				var nb = b.Move(offset + snapOffset);
 				d = d.UpdateBox(b, nb);
 				newBs.Add(nb);
 			}
-			var guides = ImmutableArray<DragGuide>.Empty;
 			return Tuple.Create(d, guides, newBs.ToImmutableArray());
 		}
 
@@ -106,17 +156,71 @@ namespace BoxEditor
 					select a;
 			return q.ToList();
 		}
+	}
 
+	public enum DragGuideSource
+	{
+		Center,
+		Port,
+		LeftEdge,
+		RightEdge,
+		TopEdge,
+		BottomEdge,
+		LeftMargin,
+		RightMargin,
+		TopMargin,
+		BottomMargin,
 	}
 
 	public class DragGuide
 	{
 		public readonly Point Start;
 		public readonly Point End;
-		public DragGuide (Point start, Point end)
+		public readonly bool IsVertical;
+		public readonly DragGuideSource Source;
+		public double Offset => IsVertical ? Start.X : Start.Y;
+		public DragGuide (Point start, Point end, DragGuideSource source)
 		{
 			Start = start;
 			End = end;
+			Source = source;
+			IsVertical = Math.Abs(end.X - start.X) < Math.Abs(end.Y - start.Y);
+		}
+		public static DragGuide Vertical(double x, DragGuideSource source)
+		{
+			return new DragGuide(new Point(x, -1e12), new Point(x, 1e12), source);
+		}
+		public static DragGuide Horizontal(double y, DragGuideSource source)
+		{
+			return new DragGuide(new Point(-1e12, y), new Point(1e12, y), source);
+		}
+		public bool CanCompareTo(DragGuide o)
+		{
+			if (IsVertical != o.IsVertical) return false;
+			return (Source == DragGuideSource.Center && o.Source == DragGuideSource.Center)
+				|| (Source == DragGuideSource.Port && o.Source == DragGuideSource.Port)
+				|| (Source == DragGuideSource.LeftMargin && o.Source == DragGuideSource.RightEdge)
+				|| (Source == DragGuideSource.RightMargin && o.Source == DragGuideSource.LeftEdge)
+				|| (Source == DragGuideSource.TopMargin && o.Source == DragGuideSource.BottomEdge)
+				|| (Source == DragGuideSource.BottomMargin && o.Source == DragGuideSource.TopEdge)
+				;
+
+		}
+		public override bool Equals(object obj)
+		{
+			var o = obj as DragGuide;
+			if (o == null) return false;
+			return (IsVertical == o.IsVertical && Source == o.Source && Math.Abs(Offset - o.Offset) < 1e-12);
+		}
+		public override int GetHashCode()
+		{
+			return IsVertical.GetHashCode () 
+				             + 573259391 * Source.GetHashCode()
+							 + 373587883 * Offset.GetHashCode();
+		}
+		public override string ToString()
+		{
+			return $"{(IsVertical?"Vertical":"Horizontal")} {Source} @ {Offset}";
 		}
 	}
 
@@ -133,7 +237,7 @@ namespace BoxEditor
 			Colors.White,
 			Colors.Black,
 			new Color("#45C0FE"),
-			Colors.Blue);
+			new Color("#FF2600"));
 
 		public DiagramStyle(
 			Color backgroundColor, 
