@@ -552,6 +552,14 @@ namespace BoxEditor
 			}
 
 			//
+			// Debug
+			//
+			foreach (var d in diagram.Paths.DebugDrawings)
+			{
+				d.Draw(canvas);
+			}
+
+			//
 			// Untransform
 			//
 			if (needsTx)

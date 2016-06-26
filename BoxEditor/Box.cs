@@ -22,6 +22,19 @@ namespace BoxEditor
             Ports = ports;
         }
 
+		public Rect PortBoundingBox
+		{
+			get
+			{
+				var bb = new BoundingBoxBuilder();
+				foreach (var p in Ports)
+				{
+					bb.Add(p.GetPoint(this));
+				}
+				return bb.BoundingBox;
+			}
+		}
+
 		public Point[] GetHandlePoints()
 		{
 			return new[] {

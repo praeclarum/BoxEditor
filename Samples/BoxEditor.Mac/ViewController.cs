@@ -48,11 +48,15 @@ namespace BoxEditor.Mac
 
 		void OnDocumentChanged()
 		{
-			var vals = new[] { "AA", "BA", "CC", "DB", "AC" };
+			var vals = new[] { "AA", "BA", "CC", "DB", "AC", "AD", "BB" };
 			var conns = new[] {
-				Tuple.Create(Tuple.Create("AA", "BottomCenter"), Tuple.Create("CC", "TopCenter")),
-				Tuple.Create(Tuple.Create("AC", "Center"), Tuple.Create("BA", "Center")),
+				Tuple.Create(Tuple.Create("AA", "TopCenter"), Tuple.Create("CC", "BottomCenter")),
+			     Tuple.Create(Tuple.Create("AA", "CenterLeft"), Tuple.Create("CC", "CenterRight")),
+				Tuple.Create(Tuple.Create("AD", "Center"), Tuple.Create("BA", "Center")),
 				Tuple.Create(Tuple.Create("BA", "CenterRight"), Tuple.Create("DB", "CenterLeft")),
+				     Tuple.Create(Tuple.Create("BB", "CenterRight"), Tuple.Create("CC", "TopCenter")),
+			     Tuple.Create(Tuple.Create("BA", "TopCenter"), Tuple.Create("DB", "CenterRight")),
+				     Tuple.Create(Tuple.Create("AC", "TopCenter"), Tuple.Create("DB", "CenterRight")),
 			};
 
 			var d = Diagram.Create(
@@ -66,7 +70,7 @@ namespace BoxEditor.Mac
 					b.Value = v;
 					b.Frame = new NGraphics.Rect(
 						100 + (v[0] - 'A') * 125,
-						100 + (v[1] - 'A') * 125,
+						50 + (v[1] - 'A') * 125,
 						100, 100);
 					b.AddPort("Center", new Point(0.5, 0.5), Directions.Any);
 					b.AddPort("TopCenter", new Point(0.5, 0), Directions.Up);

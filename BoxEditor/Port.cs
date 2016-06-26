@@ -21,6 +21,11 @@ namespace BoxEditor
 			return new Port(Value, RelativeFrame + d, Directions);
 		}
 
+		public Point GetPoint(Box inBox)
+		{
+			return GetFrame(inBox).Center;
+		}
+
 		public Rect GetFrame(Box inBox)
 		{
 			var bf = inBox.Frame;
@@ -69,5 +74,6 @@ namespace BoxEditor
 			}
 		}
 		public Rect PortFrame => Port.GetFrame(Box);
+		public Point PortPoint => Port.GetPoint(Box);
 	}
 }
