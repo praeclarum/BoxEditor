@@ -201,6 +201,7 @@ namespace BoxEditor
 						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
 						var newb = dragBoxHandleBox.MoveHandle(dragBoxHandle, d);
 						UpdateBox(dragBoxHandleBox, newb);
+						hoverSelection = null;
 						dragBoxHandleBox = newb;
 						dragBoxLastDiagramLoc = loc;
 						Redraw?.Invoke();
