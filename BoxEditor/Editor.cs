@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.Collections.Immutable;
 
 namespace BoxEditor
 {
@@ -18,7 +19,6 @@ namespace BoxEditor
             {
                 return diagram;
             }
-
             set
             {
                 diagram = value;
@@ -29,6 +29,19 @@ namespace BoxEditor
 		void OnDiagramChanged()
 		{
 			Redraw?.Invoke();
+		}
+
+		void UpdateDiagram(Diagram newDiagram)
+		{
+			diagram = newDiagram;
+		}
+
+		void UpdateBox(Box b, Box newb)
+		{
+			var newd = diagram.UpdateBox(b, newb);
+			selection = selection.Replace(b, newb);
+			if (hoverSelection == b) hoverSelection = newb;
+			UpdateDiagram(newd);
 		}
 
         public void ResizeView(Size newViewSize)
@@ -173,7 +186,8 @@ namespace BoxEditor
 						foreach (var b in selection.OfType<Box>())
 						{
 							var d = loc - dragBoxLastDiagramLoc;
-							b.Move(d);
+							var newb = b.Move(d);
+							UpdateBox(b, newb);
 						}
 						dragBoxLastDiagramLoc = loc;
 						Redraw?.Invoke();
@@ -185,7 +199,9 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
-						dragBoxHandleBox.MoveHandle(dragBoxHandle, d);
+						var newb = dragBoxHandleBox.MoveHandle(dragBoxHandle, d);
+						UpdateBox(dragBoxHandleBox, newb);
+						dragBoxHandleBox = newb;
 						dragBoxLastDiagramLoc = loc;
 						Redraw?.Invoke();
 					}
@@ -239,7 +255,7 @@ namespace BoxEditor
 
 		#region Selection
 
-		readonly List<ISelectable> selection = new List<ISelectable>();
+		ImmutableArray<ISelectable> selection = ImmutableArray<ISelectable>.Empty;
 
 		ISelectable hoverSelection = null;
 
@@ -250,8 +266,7 @@ namespace BoxEditor
 
 		public void Select(IEnumerable<ISelectable> selects)
 		{
-			selection.Clear();
-			selection.AddRange(selects);
+			selection = selects.ToImmutableArray();
 
 			if (selection.Contains(hoverSelection))
 			{
@@ -263,7 +278,7 @@ namespace BoxEditor
 
 		public bool HasSelection
 		{
-			get { return selection.Count > 0; }
+			get { return selection.Length > 0; }
 		}
 
 		public IReadOnlyList<ISelectable> Selection
@@ -316,7 +331,7 @@ namespace BoxEditor
 				s = background;
 			}
 
-			if ((s != null && IsSelected(s)) || (s == background && selection.Count == 0))
+			if ((s != null && IsSelected(s)) || (s == background && selection.Length == 0))
 			{
 				//				Console.WriteLine ("EMR");
 				if (lastEditMenuObject != s)
@@ -511,8 +526,8 @@ namespace BoxEditor
 
 		void DrawArrowHandles(Arrow arrow, ICanvas canvas, Pen handlePen, Brush handleBrush)
 		{
-			DrawArrowHandle(arrow.Start.Port.Point, canvas, handlePen, handleBrush);
-			DrawArrowHandle(arrow.End.Port.Point, canvas, handlePen, handleBrush);
+			DrawArrowHandle(arrow.Start.PortFrame.Center, canvas, handlePen, handleBrush);
+			DrawArrowHandle(arrow.End.PortFrame.Center, canvas, handlePen, handleBrush);
 		}
 
 		void DrawArrowHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)

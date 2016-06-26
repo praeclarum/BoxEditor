@@ -23,7 +23,35 @@ namespace BoxEditor
 			Style = style;
         }
 
-        public static Diagram Create(
+		public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
+		{
+			return new Diagram(newBoxes, Arrows, Style);
+		}
+
+		public Diagram WithArrows(ImmutableArray<Arrow> newArrows)
+		{
+			return new Diagram(Boxes, newArrows, Style);
+		}
+
+		public Diagram UpdateBox(Box b, Box newb)
+		{
+			var newBoxes = Boxes.Replace(b, newb);
+
+			var q = from a in Arrows
+					where a.StartBox == b || a.EndBox == b
+		               let na = a.UpdateBox (b, newb)
+		               select Tuple.Create(a, na);
+
+			var newArrows = Arrows;
+			foreach (var aa in q)
+			{
+				newArrows = newArrows.Replace(aa.Item1, aa.Item2);
+			}
+
+			return new Diagram(newBoxes, newArrows, Style);
+		}
+
+		public static Diagram Create(
 			DiagramStyle style,
             IEnumerable<object> boxValues,
             IEnumerable<object> arrowValues,
@@ -64,8 +92,7 @@ namespace BoxEditor
 			return q.ToList();
 		}
 
-
-	}
+}
 
 	public class DiagramStyle
 	{

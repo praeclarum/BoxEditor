@@ -67,12 +67,13 @@ namespace BoxEditor
 			return new Box (Value, newFrame, Style, Ports);
 		}
 
-		public void Move(Point d)
+		public Box Move(Point d)
 		{
-			WithFrame (new Rect(Frame.TopLeft + d, Frame.Size));
+			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
+			return new Box(Value, newFrame, Style, Ports);
 		}
 
-		public void MoveHandle(int index, Point d)
+		public Box MoveHandle(int index, Point d)
 		{
 			var dx = new Point(d.X, 0);
 			var dy = new Point(0, d.Y);
@@ -106,7 +107,7 @@ namespace BoxEditor
 					newFrame = new Rect(Frame.TopLeft, Frame.Size + dy);
 					break;
 			}
-			WithFrame(newFrame);
+			return WithFrame(newFrame);
 		}
 	}
 
@@ -117,10 +118,15 @@ namespace BoxEditor
         public List<Port> Ports = new List<Port>();
 		public BoxStyle Style = BoxStyle.Default;
 
-		public void AddPort(object value, Point point, Directions directions)
+		public void AddPort(object value, Rect relativeFrame, Directions directions)
         {
-			Ports.Add(new Port(value, point, directions));
+			Ports.Add(new Port(value, relativeFrame, directions));
         }
+
+		public void AddPort(object value, Point relativePoint, Directions directions)
+		{
+			Ports.Add(new Port(value, new Rect(relativePoint, Size.Zero), directions));
+		}
 
         public Box ToBox()
         {

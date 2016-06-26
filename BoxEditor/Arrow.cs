@@ -1,4 +1,5 @@
-﻿using NGraphics;
+﻿using System;
+using NGraphics;
 
 namespace BoxEditor
 {
@@ -20,6 +21,11 @@ namespace BoxEditor
             End = end;
         }
 
+		public Arrow UpdateBox(Box b, Box newb)
+		{
+			return new Arrow(Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
+		}
+
 		public Path GetPath()
 		{
 			var startCenter = StartBox.Frame.Center;
@@ -27,8 +33,8 @@ namespace BoxEditor
 
 			Point s, e;
 
-			s = Start.Port.Point;
-			e = End.Port.Point;
+			s = Start.PortFrame.Center;
+			e = End.PortFrame.Center;
 
 			var sDir = (s - startCenter).Normalized;
 			var eDir = (e - endCenter).Normalized;
@@ -42,7 +48,8 @@ namespace BoxEditor
 			p.CurveTo(c1, c2, e);
 			return p;
 		}
-	}
+
+}
 
 	public class ArrowStyle
 	{
