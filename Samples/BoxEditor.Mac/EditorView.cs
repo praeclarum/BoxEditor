@@ -46,6 +46,7 @@ namespace BoxEditor.Mac
 
 		void Initialize()
 		{
+			WantsLayer = true;
 			Editor = new Editor();
 		}
 
