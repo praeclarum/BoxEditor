@@ -504,7 +504,7 @@ namespace BoxEditor
             }
             foreach (var a in diagram.Arrows)
             {
-				var p = a.GetPath();
+				var p = diagram.GetArrowPath(a);
 				p.Pen = new Pen(a.Style.LineColor, a.Style.LineWidth);
 				p.Draw(canvas);
 				ArrowDrawn?.Invoke(a, canvas);
@@ -536,7 +536,7 @@ namespace BoxEditor
 					var a = hoverSelection as Arrow;
 					if (a != null)
 					{
-						var path = a.GetPath();
+						var path = diagram.GetArrowPath(a);
 						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.LineWidth);
 						path.Draw(canvas);
 					}

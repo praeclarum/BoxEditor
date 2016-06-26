@@ -13,6 +13,7 @@ namespace BoxEditor
         public readonly ImmutableArray<Box> Boxes;
         public readonly ImmutableArray<Arrow> Arrows;
 		public readonly DiagramStyle Style;
+		public readonly DiagramPaths Paths;
 
         public static Diagram Empty =
 			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
@@ -22,6 +23,7 @@ namespace BoxEditor
             Boxes = boxes;
             Arrows = arrows;
 			Style = style;
+			Paths = PathPlanning.Plan(boxes, arrows);
         }
 
 		public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
@@ -279,13 +281,49 @@ namespace BoxEditor
 		{
 			var maxDist = viewToDiagramScale * 22;
 			var q = from a in Arrows
-					let p = a.GetPath()
+					let p = GetArrowPath (a)
 					let d = p.DistanceTo(point)
 	                where d < a.Style.LineWidth / 2 + maxDist
 					orderby d ascending
 					select a;
 			return q.ToList();
 		}
+
+		public Path GetArrowPath(Arrow arrow)
+		{
+			var points = Paths.ArrowPaths[Arrows.IndexOf(arrow)].Points;
+			var p = new Path();
+			p.MoveTo(points[0]);
+			for (var i = 1; i < points.Length; i++)
+			{
+				p.LineTo(points[i]);
+			}
+			return p;
+		}
+
+		public Path GetDirectlyCurvedArrowPath(Arrow arrow)
+		{
+			var startCenter = arrow.StartBox.Frame.Center;
+			var endCenter = arrow.EndBox.Frame.Center;
+
+			Point s, e;
+
+			s = arrow.Start.PortFrame.Center;
+			e = arrow.End.PortFrame.Center;
+
+			var sDir = (s - startCenter).Normalized;
+			var eDir = (e - endCenter).Normalized;
+
+			var dist = s.DistanceTo(e);
+			var c1 = s + sDir * (dist / 3);
+			var c2 = e + eDir * (dist / 3);
+
+			var p = new Path();
+			p.MoveTo(s);
+			p.CurveTo(c1, c2, e);
+			return p;
+		}
+
 	}
 
 	public enum DragGuideSource

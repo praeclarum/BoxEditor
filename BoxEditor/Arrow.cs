@@ -25,29 +25,6 @@ namespace BoxEditor
 		{
 			return new Arrow(Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
 		}
-
-		public Path GetPath()
-		{
-			var startCenter = StartBox.Frame.Center;
-			var endCenter = EndBox.Frame.Center;
-
-			Point s, e;
-
-			s = Start.PortFrame.Center;
-			e = End.PortFrame.Center;
-
-			var sDir = (s - startCenter).Normalized;
-			var eDir = (e - endCenter).Normalized;
-
-			var dist = s.DistanceTo(e);
-			var c1 = s + sDir * (dist / 3);
-			var c2 = e + eDir * (dist / 3);
-
-			var p = new Path();
-			p.MoveTo(s);
-			p.CurveTo(c1, c2, e);
-			return p;
-		}
 	}
 
 	public class ArrowStyle
