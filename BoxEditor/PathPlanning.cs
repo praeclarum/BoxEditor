@@ -4,6 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using NGraphics;
+using Priority_Queue;
 
 namespace BoxEditor
 {
@@ -11,7 +12,13 @@ namespace BoxEditor
 	{
 		public static DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
 		{
-			var planner = new VisibilityPlanner();
+			if (arrows.Length == 0)
+				return DiagramPaths.Empty;
+			
+			var planner = boxes.Length > 0
+				? (IPathPlanner)new VisibilityPlanner()
+				: new DumbPlanner();
+			
 			return planner.Plan(boxes, arrows);
 		}
 	}
@@ -20,6 +27,9 @@ namespace BoxEditor
 	{
 		public readonly ImmutableArray<PlannedPath> ArrowPaths;
 		public readonly ImmutableArray<IDrawable> DebugDrawings;
+		public static readonly DiagramPaths Empty = new DiagramPaths(
+			ImmutableArray<PlannedPath>.Empty,
+			ImmutableArray<IDrawable>.Empty);
 		public DiagramPaths(ImmutableArray<PlannedPath> arrowPaths, ImmutableArray<IDrawable> debugDrawings)
 		{
 			ArrowPaths = arrowPaths;
@@ -77,6 +87,9 @@ namespace BoxEditor
 				graph.AddVertex(mb.BottomLeft);
 				graph.AddVertex(mb.BottomRight);
 			}
+
+			var astarOpenQueue = new FastPriorityQueue<Vertex>(graph.Vertices.Count + 2);
+
 			foreach (var a in arrows)
 			{
 				var sp = a.Start.PortPoint;
@@ -100,7 +113,7 @@ namespace BoxEditor
 				var startNode = graph.AddVertex(sp, sIgBox);
 				var endNode = graph.AddVertex(ep, eIgBox);
 
-				var nodePath = AStar(graph, startNode, endNode);
+				var nodePath = AStar(graph, astarOpenQueue, startNode, endNode);
 
 				graph.RemoveVertex(startNode);
 				graph.RemoveVertex(endNode);
@@ -122,7 +135,7 @@ namespace BoxEditor
 		/// "Theta*: Any-Angle Path Planning on Grids"
 		/// - Kenny Daniel, Alex Nash, Sven Koenig - University of Southern California
 		/// </summary>
-		List<Vertex> AStar(Graph graph, Vertex startVert, Vertex endVert)
+		List<Vertex> AStar(Graph graph, FastPriorityQueue<Vertex> open, Vertex startVert, Vertex endVert)
 		{
 			//
 			// Initialize
@@ -130,17 +143,76 @@ namespace BoxEditor
 			graph.InitializeAStar(endVert);
 			startVert.G = 0;
 			startVert.Parent = startVert;
+			open.Clear();
+			open.Enqueue(startVert, startVert.G + startVert.H);
+			startVert.IsOpen = true;
 
 			//
 			// Loop
 			//
+			Vertex s = null;
+			while (open.Count > 0)
+			{
+				//
+				// Get the next best vertex
+				//
+				s = open.Dequeue();
+				s.IsOpen = false;
+
+				//
+				// If it's the end, we're done!
+				//
+				if (s == endVert)
+				{
+					Debug.WriteLine($"PATH FOUND");
+					break;
+				}
+
+				//
+				// Not at then end :-(
+				// Add it to the closed set so we don't try it again
+				//
+				s.IsClosed = true;
+
+				//
+				// Update the neighbors with this new path
+				//
+				graph.EnsureNeighbors(s);
+				foreach (var sp in s.Neighbors)
+				{
+					if (!sp.IsClosed)
+					{
+						if (!sp.IsOpen)
+						{
+							sp.G = double.MaxValue;
+							sp.Parent = null;
+						}
+						var spg = s.G + s.Point.DistanceTo(sp.Point);
+						if (spg < sp.G)
+						{
+							sp.G = spg;
+							sp.Parent = s;
+							if (sp.IsOpen)
+							{
+								open.UpdatePriority(sp, sp.G + sp.H);
+							}
+							else
+							{
+								sp.IsOpen = true;
+								open.Enqueue(sp, sp.G + sp.H);
+							}
+						}
+					}
+				}
+			}
 
 			//
 			// Safety...
 			//
 			if (endVert.Parent == null)
 			{
-				endVert.Parent = startVert;
+				Debug.WriteLine($"PATH NOT FOUND");
+				endVert.Parent = s ?? startVert;
 			}
 
 			//
@@ -158,7 +230,7 @@ namespace BoxEditor
 			return r;
 		}
 
-		class Vertex
+		class Vertex : FastPriorityQueueNode
 		{
 			public readonly Point Point;
 			public readonly int IgnoreBox;
@@ -184,6 +256,10 @@ namespace BoxEditor
 			/// Distance to the goal.
 			/// </summary>
 			public double H;
+			/// <summary>
+			/// True if a member of the open set.
+			/// </summary>
+			public bool IsOpen;
 			/// <summary>
 			/// True if a member of the closed set.
 			/// </summary>
@@ -214,17 +290,29 @@ namespace BoxEditor
 				//
 				// Calculate its visibility
 				//
-				foreach (var n in Vertices)
+				foreach (var v in Vertices)
 				{
-					if (n.Neighbors == null) continue;
-					if (vmap.LineOfSight(n.Point, vert.Point))
+					if (v.Neighbors == null) continue;
+					if (vmap.LineOfSight(v.Point, vert.Point))
 					{
-						n.Neighbors.Add(vert);
+						v.Neighbors.Add(vert);
 					}
 				}
 
 				Vertices.Add(vert);
 				return vert;
+			}
+			public void EnsureNeighbors(Vertex vert)
+			{
+				if (vert.Neighbors != null) return;
+				vert.Neighbors = new List<Vertex>();
+				foreach (var v in Vertices)
+				{
+					if (vmap.LineOfSight(vert.Point, v.Point))
+					{
+						vert.Neighbors.Add(v);
+					}
+				}
 			}
 			public void RemoveVertex(Vertex vert)
 			{
@@ -242,6 +330,7 @@ namespace BoxEditor
 					v.Parent = null;
 					v.G = double.MaxValue;
 					v.H = v.Point.DistanceTo(endVert.Point);
+					v.IsOpen = false;
 					v.IsClosed = false;
 				}
 			}
@@ -277,9 +366,10 @@ namespace BoxEditor
 				if (distance < 1e-12) return true;
 
 				var direction = delta * (1 / distance);
-				var invDirection = new Point(1 / direction.X, 1 / direction.Y);
-				var sign0 = invDirection.X < 0 ? 1 : 0;
-				var sign1 = invDirection.Y < 0 ? 1 : 0;
+				// Divide by 0 is valid as +/- Inf is supported
+				var invDirection = new Point(1.0 / direction.X, 1.0 / direction.Y);
+				var sign0 = invDirection.X < 0.0 ? 1 : 0;
+				var sign1 = invDirection.Y < 0.0 ? 1 : 0;
 
 				//
 				// Go through the boxes...
@@ -289,7 +379,7 @@ namespace BoxEditor
 					var tmin = (bounds[i + sign0].X - origin.X) * invDirection.X;
 					var tmax = (bounds[i + 1 - sign0].X - origin.X) * invDirection.X;
 					var tymin = (bounds[i + sign1].Y - origin.Y) * invDirection.Y;
-					var tymax = (bounds[i + 1 - sign1].Y - origin.X) * invDirection.Y;
+					var tymax = (bounds[i + 1 - sign1].Y - origin.Y) * invDirection.Y;
 
 					var isect = false;
 					if ((tmin > tymax) || (tymin > tmax))
@@ -302,9 +392,9 @@ namespace BoxEditor
 						isect = (tmin < 1 && tmax > 0);
 					}
 
+					Debug.WriteLine($"ISECT {isect} [{bounds[i]},{bounds[i + 1]}] with <{origin},{destination}>");
 					if (isect)
 					{
-						Debug.WriteLine($"ISECT [{bounds[i]},{bounds[i + 1]}] with <{origin},{destination}>");
 						return false;
 					}
 				}
