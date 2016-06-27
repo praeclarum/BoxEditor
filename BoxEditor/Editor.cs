@@ -483,6 +483,7 @@ namespace BoxEditor
 			//var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
 
 			var handlePen = new Pen(diagram.Style.HandleBorderColor, 1.0 * viewToDiagram.A);
+			var handleLinePen = new Pen(diagram.Style.HandleBorderColor.WithAlpha(0.5), 1.0 * viewToDiagram.A);
 			var handleBrush = new SolidBrush(diagram.Style.HandleBackgroundColor);
 
             foreach (var b in diagram.Boxes)
@@ -512,6 +513,7 @@ namespace BoxEditor
 			{
 				if (IsSelected(b))
 				{
+					canvas.DrawRectangle(b.Frame, handleLinePen);
 					DrawBoxHandles(b, canvas, handlePen, handleBrush);
 				}
 			}
