@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using NGraphics;
 
@@ -113,14 +114,68 @@ namespace BoxEditor
 
 		class VisibilityMap
 		{
-			ImmutableArray<Box> boxes;
+			readonly ImmutableArray<Box> boxes;
+			readonly Point[] bounds;
 			public VisibilityMap(ImmutableArray<Box> boxes)
 			{
 				this.boxes = boxes;
+				bounds = new Point[boxes.Length * 2];
+				for (int i = 0; i < boxes.Length; i++)
+				{
+					var b = boxes[i];
+					var bb = b.PortBoundingBox;
+					bounds[i * 2] = bb.TopLeft;
+					bounds[i * 2 + 1] = bb.BottomRight;
+				}
 			}
-			public bool LineOfSight(Point start, Point target)
+			/// <summary>
+			/// "An Efficient and Robust Ray–Box Intersection Algorithm"
+			/// - Amy Williams Steve Barrus R. Keith Morley Peter Shirley - University of Utah
+			/// </summary>
+			public bool LineOfSight(Point origin, Point destination)
 			{
-				throw new NotImplementedException();
+				//
+				// Cached ray properties
+				//
+				var delta = (destination - origin);
+				var distance = delta.Distance;
+				if (distance < 1e-12) return true;
+
+				var direction = delta * (1 / distance);
+				var invDirection = new Point(1 / direction.X, 1 / direction.Y);
+				var sign0 = invDirection.X < 0 ? 1 : 0;
+				var sign1 = invDirection.Y < 0 ? 1 : 0;
+
+				//
+				// Go through the boxes...
+				//
+				for (var i = 0; i < bounds.Length; i += 2)
+				{
+					var tmin = (bounds[i + sign0].X - origin.X) * invDirection.X;
+					var tmax = (bounds[i + 1 - sign0].X - origin.X) * invDirection.X;
+					var tymin = (bounds[i + sign1].Y - origin.Y) * invDirection.Y;
+					var tymax = (bounds[i + 1 - sign1].Y - origin.X) * invDirection.Y;
+
+					var isect = false;
+					if ((tmin > tymax) || (tymin > tmax))
+					{
+						//isect = false;
+					}
+					else {
+						if (tymin > tmin) tmin = tymin;
+						if (tymax < tmax) tmax = tymax;
+						isect = (tmin < 1 && tmax > 0);
+					}
+
+					if (isect)
+					{
+						Debug.WriteLine($"ISECT [{bounds[i]},{bounds[i+1]}] with <{origin},{destination}>");
+						return false;
+					}
+				}
+
+				// No intersections
+				return true;
 			}
 		}
 
