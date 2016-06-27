@@ -59,7 +59,7 @@ namespace BoxEditor
 			return new Diagram(newBoxes, newArrows, Style);
 		}
 
-		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset)
+		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset, bool snapToGuides)
 		{
 			if (boxes.Length == 0)
 				return Tuple.Create(this, ImmutableArray<DragGuide>.Empty, boxes);
@@ -109,10 +109,15 @@ namespace BoxEditor
 						.OrderBy(x => Math.Abs(x.Item3))
 				        .FirstOrDefault()
 						;
-			
-			var snapOffset = new Point(
-				vert != null ? vert.Item3 : 0,
-				horz != null ? horz.Item3 : 0);
+
+			var snapOffset = Point.Zero;
+
+			if (snapToGuides)
+			{
+				snapOffset = new Point(
+					vert != null ? vert.Item3 : 0,
+					horz != null ? horz.Item3 : 0);
+			}
 
 			var newBs = boxes
 				.Select(b => Tuple.Create(b, b.Move(offset + snapOffset)))
@@ -123,23 +128,26 @@ namespace BoxEditor
 			d = d.PreventOverlaps(newBsI, offset);
 
 			var guides = new List<DragGuide>();
-			if (vert != null)
+			if (snapToGuides)
 			{
-				var mf = d.Boxes[vert.Item1.Tag].Frame;
-				var si = vert.Item2.Tag;
-				var sf = d.Boxes[si].Frame;
-				var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == vert.Item2.Source);
-				//Debug.WriteLine($"V G.S={g.Source}");
-				guides.Add(g.Clip(sf.Union(mf)));
-			}
-			if (horz != null)
-			{
-				var mf = d.Boxes[horz.Item1.Tag].Frame;
-				var si = horz.Item2.Tag;
-				var sf = d.Boxes[si].Frame;
-				var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == horz.Item2.Source);
-				//Debug.WriteLine($"H G.S={g.Source}");
-				guides.Add(g.Clip(sf.Union(mf)));
+				if (vert != null)
+				{
+					var mf = d.Boxes[vert.Item1.Tag].Frame;
+					var si = vert.Item2.Tag;
+					var sf = d.Boxes[si].Frame;
+					var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == vert.Item2.Source);
+					//Debug.WriteLine($"V G.S={g.Source}");
+					guides.Add(g.Clip(sf.Union(mf)));
+				}
+				if (horz != null)
+				{
+					var mf = d.Boxes[horz.Item1.Tag].Frame;
+					var si = horz.Item2.Tag;
+					var sf = d.Boxes[si].Frame;
+					var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == horz.Item2.Source);
+					//Debug.WriteLine($"H G.S={g.Source}");
+					guides.Add(g.Clip(sf.Union(mf)));
+				}
 			}
 
 			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);

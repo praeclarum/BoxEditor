@@ -97,11 +97,15 @@ namespace BoxEditor.Mac
 			loc.Y = Bounds.Height - loc.Y;
 			var mods = theEvent.ModifierFlags;
 			var shift = mods.HasFlag(NSEventModifierMask.ShiftKeyMask);
+			var cmd = mods.HasFlag(NSEventModifierMask.CommandKeyMask);
+			var ctrl = mods.HasFlag(NSEventModifierMask.ControlKeyMask);
 			return new TouchEvent
 			{
 				TouchId = theEvent.EventNumber,
 				Location = new Point(loc.X, loc.Y),
 				IsShiftDown = shift,
+				IsCommandDown = cmd,
+				IsControlDown = cmd,
 			};
 		}
 

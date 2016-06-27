@@ -212,7 +212,7 @@ namespace BoxEditor
 					{
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
-						var mr = dragDiagram.MoveBoxes(dragBoxes, d);
+						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown);
 						var newd = mr.Item1;
 						dragGuides = mr.Item2;
 						UpdateDiagram(newd);
@@ -607,6 +607,8 @@ namespace BoxEditor
 		public long TouchId;
 		public Point Location;
 		public bool IsShiftDown;
+		public bool IsCommandDown;
+		public bool IsControlDown;
 
 		public override string ToString()
 		{
