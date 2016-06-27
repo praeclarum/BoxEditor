@@ -161,12 +161,12 @@ namespace BoxEditor
         public List<Port> Ports = new List<Port>();
 		public BoxStyle Style = BoxStyle.Default;
 
-		public void AddPort(object value, Rect relativeFrame, Directions directions)
+		public void AddPort(object value, Rect relativeFrame, Point directions)
         {
 			Ports.Add(new Port(value, relativeFrame, directions));
         }
 
-		public void AddPort(object value, Point relativePoint, Directions directions)
+		public void AddPort(object value, Point relativePoint, Point directions)
 		{
 			Ports.Add(new Port(value, new Rect(relativePoint, Size.Zero), directions));
 		}

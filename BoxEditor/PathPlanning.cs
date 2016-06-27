@@ -40,9 +40,57 @@ namespace BoxEditor
 	public class PlannedPath
 	{
 		public readonly ImmutableArray<Point> Points;
-		public PlannedPath(ImmutableArray<Point> points)
+
+		public readonly Path CurvedPath;
+
+		public PlannedPath(ImmutableArray<Point> points, Point startDir, Point endDir)
 		{
 			Points = points;
+
+			CurvedPath = CreateCurvedPath(startDir, endDir);
+		}
+
+		Path CreateCurvedPath(Point startDir, Point endDir)
+		{
+			var p = new Path();
+			if (Points.Length > 1)
+			{
+				var pt = Points[0];
+				p.MoveTo(pt);
+				var dir = startDir;
+				if (dir.DistanceSquared < 1e-12)
+				{
+					dir = (Points[1] - pt).Normalized;
+				}
+
+				for (var i = 1; i < Points.Length; i++)
+				{
+					var pti = Points[i];
+					var d = pti - pt;
+					var dist = d.Distance;
+					var cdist = dist * 0.25;
+
+					var diri = endDir;
+					if (i + 1 < Points.Length)
+					{
+						var d1 = (pt - pti).Normalized;
+						var d2 = (pti - Points[i + 1]).Normalized;
+						diri = (d1 + d2).Normalized;
+						//diri = (pt - Points[i + 1]).Normalized;
+					}
+					if (diri.DistanceSquared < 1e-12)
+					{
+						diri = (pt - pti).Normalized;
+					}
+
+					var c1 = pt + dir * cdist;
+					var c2 = pti + diri * cdist;
+					p.CurveTo(c1, c2, Points[i]);
+					pt = pti;
+					dir = -diri;
+				}
+			}
+			return p;
 		}
 	}
 
@@ -62,7 +110,7 @@ namespace BoxEditor
 						a.Start.PortFrame.Center,
 						a.End.PortFrame.Center,
 					};
-					return new PlannedPath (points.ToImmutableArray());
+					return new PlannedPath (points.ToImmutableArray(), a.Start.Port.Direction, a.End.Port.Direction);
 				});
 			return new DiagramPaths(q.ToImmutableArray(), ImmutableArray<IDrawable>.Empty);
 		}
@@ -119,7 +167,10 @@ namespace BoxEditor
 				graph.RemoveVertex(endNode);
 
 				var points = nodePath.Select(n => n.Point);
-				var pp = new PlannedPath(points.ToImmutableArray());
+				var pp = new PlannedPath(
+					points.ToImmutableArray(),
+					a.Start.Port.Direction,
+					a.End.Port.Direction);
 				arrowPaths.Add(pp);
 			}
 			var npen = new Pen(Colors.Green, 1);

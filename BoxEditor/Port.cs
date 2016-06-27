@@ -7,18 +7,18 @@ namespace BoxEditor
     {
         public readonly object Value;
 		public readonly Rect RelativeFrame;
-		public readonly Directions Directions;
+		public readonly Point Direction;
 
-		public Port(object value, Rect relativeFrame, Directions directions)
+		public Port(object value, Rect relativeFrame, Point directions)
         {
             Value = value;
             RelativeFrame = relativeFrame;
-			Directions = directions;
+			Direction = directions;
         }
 
 		public Port Move(Point d)
 		{
-			return new Port(Value, RelativeFrame + d, Directions);
+			return new Port(Value, RelativeFrame + d, Direction);
 		}
 
 		public Point GetPoint(Box inBox)
@@ -37,19 +37,6 @@ namespace BoxEditor
 				rf.Height * bf.Height);
 			return pf;
 		}
-	}
-
-	[Flags]
-	public enum Directions
-	{
-		None = 0x00,
-		Left = 0x01,
-		Right = 0x02,
-		Up = 0x04,
-		Down = 0x08,
-		Horizontal = Left | Right,
-		Vertical = Up | Down,
-		Any = Left | Right | Up | Down,
 	}
 
 	public class PortRef

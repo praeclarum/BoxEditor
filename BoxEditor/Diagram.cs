@@ -291,14 +291,8 @@ namespace BoxEditor
 
 		public Path GetArrowPath(Arrow arrow)
 		{
-			var points = Paths.ArrowPaths[Arrows.IndexOf(arrow)].Points;
-			var p = new Path();
-			p.MoveTo(points[0]);
-			for (var i = 1; i < points.Length; i++)
-			{
-				p.LineTo(points[i]);
-			}
-			return p;
+			var arrowIndex = Arrows.IndexOf(arrow);
+			return Paths.ArrowPaths[arrowIndex].CurvedPath;
 		}
 
 		public Path GetDirectlyCurvedArrowPath(Arrow arrow)

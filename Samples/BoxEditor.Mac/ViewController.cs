@@ -72,11 +72,11 @@ namespace BoxEditor.Mac
 						100 + (v[0] - 'A') * 125,
 						50 + (v[1] - 'A') * 125,
 						100, 100);
-					b.AddPort("Center", new Point(0.5, 0.5), Directions.Any);
-					b.AddPort("TopCenter", new Point(0.5, 0), Directions.Up);
-					b.AddPort("BottomCenter", new Point(0.5, 1), Directions.Down);
-					b.AddPort("CenterLeft", new Point(0, 0.5), Directions.Left);
-					b.AddPort("CenterRight", new Point(1, 0.5), Directions.Right);
+					b.AddPort("Center", new Point(0.5, 0.5), Point.Zero);
+					b.AddPort("TopCenter", new Point(0.5, 0), -Point.OneY);
+					b.AddPort("BottomCenter", new Point(0.5, 1), Point.OneY);
+					b.AddPort("CenterLeft", new Point(0, 0.5), -Point.OneX);
+					b.AddPort("CenterRight", new Point(1, 0.5), Point.OneX);
 					return b.ToBox();
 				},
 				(f, o) =>
