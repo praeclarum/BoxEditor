@@ -76,7 +76,6 @@ namespace BoxEditor
 						var d1 = (pt - pti).Normalized;
 						var d2 = (pti - Points[i + 1]).Normalized;
 						diri = (d1 + d2).Normalized;
-						//diri = (pt - Points[i + 1]).Normalized;
 					}
 					if (diri.DistanceSquared < 1e-12)
 					{
@@ -251,9 +250,16 @@ namespace BoxEditor
 							sp.G = double.MaxValue;
 							sp.Parent = null;
 						}
+						//
+						// Calculate a potential new score for the vertex
+						// if it follows our path.
+						//
 						var spg = s.G + s.Point.DistanceTo(sp.Point);
 						if (spg < sp.G)
 						{
+							//
+							// It's a winner, let's queue it up for inspection
+							//
 							sp.G = spg;
 							sp.Parent = s;
 							if (sp.IsOpen)
@@ -357,7 +363,7 @@ namespace BoxEditor
 				foreach (var v in Vertices)
 				{
 					if (v.Neighbors == null) continue;
-					if (vmap.LineOfSight(v.Point, vert.Point))
+					if (vmap.LineOfSight(v.Point, vert.Point, v.IgnoreBox, vert.IgnoreBox))
 					{
 						v.Neighbors.Add(vert);
 					}
@@ -373,7 +379,7 @@ namespace BoxEditor
 				foreach (var v in Vertices)
 				{
 					if (v == vert) continue;
-					if (vmap.LineOfSight(vert.Point, v.Point))
+					if (vmap.LineOfSight(vert.Point, v.Point, vert.IgnoreBox, v.IgnoreBox))
 					{
 						vert.Neighbors.Add(v);
 					}
@@ -422,7 +428,7 @@ namespace BoxEditor
 			/// "An Efficient and Robust Ray–Box Intersection Algorithm"
 			/// - Amy Williams, Steve Barrus, R. Keith Morley, Peter Shirley - University of Utah
 			/// </summary>
-			public bool LineOfSight(Point origin, Point destination)
+			public bool LineOfSight(Point origin, Point destination, int ignoreBox0, int ignoreBox1)
 			{
 				//
 				// Cached ray properties
@@ -442,8 +448,11 @@ namespace BoxEditor
 				//
 				// Go through the boxes...
 				//
-				for (var i = 0; i < bounds.Length; i += 2)
+				for (int i = 0, boxIndex = 0; i < bounds.Length; i += 2, boxIndex++)
 				{
+					if (boxIndex == ignoreBox0 || boxIndex == ignoreBox1)
+						continue;
+					
 					var tmin = (bounds[i + sign0].X - origin.X) * invDirection.X;
 					var tmax = (bounds[i + 1 - sign0].X - origin.X) * invDirection.X;
 					var tymin = (bounds[i + sign1].Y - origin.Y) * invDirection.Y;
