@@ -122,13 +122,26 @@ namespace BoxEditor
 				var pp = new PlannedPath(points.ToImmutableArray());
 				arrowPaths.Add(pp);
 			}
-			debugs.AddRange(graph.Vertices.Select(n =>
+			var npen = new Pen(Colors.Green, 1);
+			foreach (var v in graph.Vertices)
 			{
-				var c = n.IgnoreBox >= 0 ? Colors.Red : Colors.Blue;
-				return new Ellipse(n.Point-new Size(4), new Size(8), brush: new SolidBrush(c));
-			}));
+				var c = v.IgnoreBox >= 0 ? Colors.Red : Colors.Blue;
+				if (v.Neighbors == null) continue;
+				foreach (var n in v.Neighbors)
+				{
+					var p = new Path();
+					p.MoveTo(v.Point);
+					p.LineTo(n.Point);
+					p.Pen = npen;
+					debugs.Add(p);
+				}
+				var e = new Ellipse(v.Point-new Size(4), new Size(8), brush: new SolidBrush(c));
+				debugs.Add(e);
+			}
 
-			return new DiagramPaths(arrowPaths.ToImmutableArray(), debugs.ToImmutableArray());
+			var nodebugs = Enumerable.Empty<IDrawable>();
+
+			return new DiagramPaths(arrowPaths.ToImmutableArray(), nodebugs.ToImmutableArray());
 		}
 
 		/// <summary>
@@ -308,6 +321,7 @@ namespace BoxEditor
 				vert.Neighbors = new List<Vertex>();
 				foreach (var v in Vertices)
 				{
+					if (v == vert) continue;
 					if (vmap.LineOfSight(vert.Point, v.Point))
 					{
 						vert.Neighbors.Add(v);
@@ -347,6 +361,7 @@ namespace BoxEditor
 				{
 					var b = boxes[i];
 					var bb = b.PortBoundingBox;
+					bb.Inflate(-bb.Size * 0.005);
 					bounds[i * 2] = bb.TopLeft;
 					bounds[i * 2 + 1] = bb.BottomRight;
 				}
@@ -370,6 +385,8 @@ namespace BoxEditor
 				var invDirection = new Point(1.0 / direction.X, 1.0 / direction.Y);
 				var sign0 = invDirection.X < 0.0 ? 1 : 0;
 				var sign1 = invDirection.Y < 0.0 ? 1 : 0;
+				var t0 = 0.0;
+				var t1 = distance;
 
 				//
 				// Go through the boxes...
@@ -389,10 +406,10 @@ namespace BoxEditor
 					else {
 						if (tymin > tmin) tmin = tymin;
 						if (tymax < tmax) tmax = tymax;
-						isect = (tmin < 1 && tmax > 0);
+						isect = (tmin < t1 && tmax > t0);
 					}
 
-					Debug.WriteLine($"ISECT {isect} [{bounds[i]},{bounds[i + 1]}] with <{origin},{destination}>");
+					//Debug.WriteLine($"ISECT {isect} [{bounds[i]},{bounds[i + 1]}] with <{origin},{destination}>");
 					if (isect)
 					{
 						return false;
