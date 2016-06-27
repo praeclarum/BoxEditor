@@ -231,7 +231,9 @@ namespace BoxEditor
 						var d = loc - dragBoxLastDiagramLoc;
 						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
 						var newb = dragBoxHandleOriginalBox.MoveHandle(dragBoxHandle, d);
-						var newd = diagram.UpdateBox(dragBoxHandleBox, newb);
+						var newd = dragDiagram
+							.UpdateBoxes(new[] { Tuple.Create(dragBoxHandleOriginalBox, newb) })
+							.PreventOverlaps(new[] { newb }, Point.Zero);
 						UpdateDiagram(newd);
 						OnBoxChanged(dragBoxHandleBox, newb);
 						hoverSelection = null;

@@ -36,21 +36,26 @@ namespace BoxEditor
 			return new Diagram(Boxes, newArrows, Style);
 		}
 
-		public Diagram UpdateBox(Box b, Box newb)
+		public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
 		{
-			var newBoxes = Boxes.Replace(b, newb);
-
-			var q = from a in Arrows
-					where a.StartBox == b || a.EndBox == b
-		               let na = a.UpdateBox (b, newb)
-		               select Tuple.Create(a, na);
-
+			var newBoxes = Boxes;
 			var newArrows = Arrows;
-			foreach (var aa in q)
+			foreach (var e in boxes)
 			{
-				newArrows = newArrows.Replace(aa.Item1, aa.Item2);
-			}
+				var b = e.Item1;
+				var newb = e.Item2;
+				newBoxes = newBoxes.Replace(b, newb);
 
+				var q = from a in newArrows
+						where a.StartBox == b || a.EndBox == b
+						let na = a.UpdateBox(b, newb)
+						select Tuple.Create(a, na);
+
+				foreach (var aa in q)
+				{
+					newArrows = newArrows.Replace(aa.Item1, aa.Item2);
+				}
+			}
 			return new Diagram(newBoxes, newArrows, Style);
 		}
 
@@ -109,14 +114,11 @@ namespace BoxEditor
 				vert != null ? vert.Item3 : 0,
 				horz != null ? horz.Item3 : 0);
 
-			var newBs = new List<Box>();
-			foreach (var b in boxes)
-			{
-				var nb = b.Move(offset + snapOffset);
-				d = d.UpdateBox(b, nb);
-				newBs.Add(nb);
-			}
-			var newBsI = newBs.ToImmutableArray();
+			var newBs = boxes
+				.Select(b => Tuple.Create(b, b.Move(offset + snapOffset)))
+				.ToImmutableArray();
+			d = d.UpdateBoxes(newBs);
+			var newBsI = newBs.Select(x => x.Item2).ToImmutableArray();
 
 			d = d.PreventOverlaps(newBsI, offset);
 
@@ -143,7 +145,7 @@ namespace BoxEditor
 			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);
 		}
 
-		public Diagram PreventOverlaps(ImmutableArray<Box> staticBoxes, Point staticOffset)
+		public Diagram PreventOverlaps(IEnumerable<Box> staticBoxes, Point staticOffset)
 		{
 			var d = this;
 			var n = d.Boxes.Length;
@@ -152,6 +154,9 @@ namespace BoxEditor
 			var maxIters = 100;
 
 			var offsets = d.Boxes.Select(x => Point.Zero).ToList();
+
+			var staticBoxSet = staticBoxes
+				.ToImmutableHashSet();
 
 			for (var iter = 0; iter < maxIters && iterChanged; iter++)
 			{
@@ -168,9 +173,9 @@ namespace BoxEditor
 
 						if (Math.Abs(overlap.X) < 1e-5 && Math.Abs(overlap.Y) < 1e-5) continue;
 
-						if (staticBoxes.Contains(a))
+						if (staticBoxSet.Contains(a))
 						{
-							if (staticBoxes.Contains(b))
+							if (staticBoxSet.Contains(b))
 							{
 								// Nothing
 							}
@@ -183,7 +188,7 @@ namespace BoxEditor
 							}
 						}
 						else {
-							if (staticBoxes.Contains(b))
+							if (staticBoxSet.Contains(b))
 							{
 								iterChanged = true;
 								var dx = a.Frame.Center.X < b.Frame.Center.X ? -1 : 1;
@@ -205,15 +210,14 @@ namespace BoxEditor
 				}
 			}
 
-			for (var i = 0; i < n; i++)
-			{
-				var b = d.Boxes[i];
-				var o = offsets[i];
-				if (Math.Abs(o.X) > 1e-12 || Math.Abs(o.Y) > 1e-12)
-				{
-					d = d.UpdateBox(b, b.Move(o));
-				}
-			}
+			var newBs = d
+				.Boxes
+				.Select((b, i) => Tuple.Create(b, i))
+				.Where(bt => Math.Abs(offsets[bt.Item2].X) > 1e-12 || Math.Abs(offsets[bt.Item2].Y) > 1e-12)
+				.Select(bt => Tuple.Create(bt.Item1, bt.Item1.Move(offsets[bt.Item2])))
+				.ToList();
+
+			d = d.UpdateBoxes(newBs);
 
 			return d;
 		}
