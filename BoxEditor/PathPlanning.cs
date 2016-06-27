@@ -121,7 +121,6 @@ namespace BoxEditor
 		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
 		{
 			var arrowPaths = new List<PlannedPath>();
-			var debugs = new List<IDrawable>();
 
 			var vmap = new VisibilityMap(boxes);
 			var graph = new Graph(vmap);
@@ -173,6 +172,9 @@ namespace BoxEditor
 					a.End.Port.Direction);
 				arrowPaths.Add(pp);
 			}
+
+			var debugs = new List<IDrawable>();
+#if false
 			var npen = new Pen(Colors.Green, 1);
 			foreach (var v in graph.Vertices)
 			{
@@ -189,10 +191,9 @@ namespace BoxEditor
 				var e = new Ellipse(v.Point-new Size(4), new Size(8), brush: new SolidBrush(c));
 				debugs.Add(e);
 			}
+#endif
 
-			var nodebugs = Enumerable.Empty<IDrawable>();
-
-			return new DiagramPaths(arrowPaths.ToImmutableArray(), nodebugs.ToImmutableArray());
+			return new DiagramPaths(arrowPaths.ToImmutableArray(), debugs.ToImmutableArray());
 		}
 
 		/// <summary>
