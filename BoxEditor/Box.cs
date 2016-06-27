@@ -91,35 +91,59 @@ namespace BoxEditor
 			var dx = new Point(d.X, 0);
 			var dy = new Point(0, d.Y);
 
-			var newFrame = Frame;
+			var minw = Style.MinSize.Width;
+			var minh = Style.MinSize.Height;
+
+			var dl = Point.Zero;
+			var ds = Point.Zero;
 
 			switch (index)
 			{
 				case 0:
-					newFrame = new Rect(Frame.TopLeft + d, Frame.Size - d);
+					dl = d;
+					ds = -d;
 					break;
 				case 1:
-					newFrame = new Rect(Frame.TopLeft + dy, Frame.Size + dx - dy);
+					dl = dy;
+					ds = dx - dy;
 					break;
 				case 2:
-					newFrame = new Rect(Frame.TopLeft + dx, Frame.Size - dx + dy);
+					dl = dx;
+					ds = -dx + dy;
 					break;
 				case 3:
-					newFrame = new Rect(Frame.TopLeft, Frame.Size + d);
+					ds = d;
 					break;
 				case 4:
-					newFrame = new Rect(Frame.TopLeft + dy, Frame.Size - dy);
+					dl = dy;
+					ds = -dy;
 					break;
 				case 5:
-					newFrame = new Rect(Frame.TopLeft + dx, Frame.Size - dx);
+					dl = dx;
+					ds = -dx;
 					break;
 				case 6:
-					newFrame = new Rect(Frame.TopLeft, Frame.Size + dx);
+					ds = dx;
 					break;
 				case 7:
-					newFrame = new Rect(Frame.TopLeft, Frame.Size + dy);
+					ds = dy;
 					break;
 			}
+			if (Frame.Width + ds.X < minw)
+			{
+				var nds = minw - Frame.Width;
+				var dds = nds - ds.X;
+				if (Math.Abs(dl.X) > 1e-12) dl.X -= dds;
+				ds.X = nds;
+			}
+			if (Frame.Height + ds.Y < minh)
+			{
+				var nds = minh - Frame.Height;
+				var dds = nds - ds.Y;
+				if (Math.Abs(dl.Y) > 1e-12) dl.Y -= dds;
+				ds.Y = nds;
+			}
+			var newFrame = new Rect(Frame.TopLeft + dl, Frame.Size + ds);
 			return WithFrame(newFrame);
 		}
 
@@ -183,16 +207,18 @@ namespace BoxEditor
 		public readonly Color BorderColor;
 		public readonly double BorderWidth;
 		public readonly Size Margin;
+		public readonly Size MinSize;
 
 		public static readonly BoxStyle Default =
-			new BoxStyle(Colors.White, Colors.Black, 1, new Size (10, 20));
+			new BoxStyle(Colors.White, Colors.Black, 1, new Size(11, 22), new Size(44, 44));
 
-		public BoxStyle(Color backgroundColor, Color borderColor, double borderWidth, Size margin)
+		public BoxStyle(Color backgroundColor, Color borderColor, double borderWidth, Size margin, Size minSize)
 		{
 			BackgroundColor = backgroundColor;
 			BorderColor = borderColor;
 			BorderWidth = borderWidth;
 			Margin = margin;
+			MinSize = minSize;
 		}
 	}
 }

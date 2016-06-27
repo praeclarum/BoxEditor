@@ -36,13 +36,6 @@ namespace BoxEditor
 			diagram = newDiagram;
 		}
 
-		void UpdateBox(Box b, Box newb)
-		{
-			var newd = diagram.UpdateBox(b, newb);
-			OnBoxChanged(b, newb);
-			UpdateDiagram(newd);
-		}
-
 		void OnBoxChanged(Box b, Box newb)
 		{
 			selection = selection.Replace(b, newb);
@@ -101,6 +94,7 @@ namespace BoxEditor
 		Diagram dragDiagram = Diagram.Empty;
 		ImmutableArray<Box> dragBoxes = ImmutableArray<Box>.Empty;
 		ImmutableArray<Box> dragLastBoxes = ImmutableArray<Box>.Empty;
+		Box dragBoxHandleOriginalBox = null;
 		Box dragBoxHandleBox = null;
 
 		ImmutableArray<DragGuide> dragGuides = ImmutableArray<DragGuide>.Empty;
@@ -135,8 +129,10 @@ namespace BoxEditor
 				{
 					touchGesture = TouchGesture.DragBoxHandle;
 					dragBoxLastDiagramLoc = diagramLoc;
+					dragDiagram = diagram;
 					dragBoxHandle = handleHit.Item2;
-					dragBoxHandleBox = handleHit.Item1;
+					dragBoxHandleOriginalBox = handleHit.Item1;
+					dragBoxHandleBox = dragBoxHandleOriginalBox;
 				}
 				else if (boxHit != null)
 				{
@@ -234,11 +230,12 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
-						var newb = dragBoxHandleBox.MoveHandle(dragBoxHandle, d);
-						UpdateBox(dragBoxHandleBox, newb);
+						var newb = dragBoxHandleOriginalBox.MoveHandle(dragBoxHandle, d);
+						var newd = diagram.UpdateBox(dragBoxHandleBox, newb);
+						UpdateDiagram(newd);
+						OnBoxChanged(dragBoxHandleBox, newb);
 						hoverSelection = null;
 						dragBoxHandleBox = newb;
-						dragBoxLastDiagramLoc = loc;
 						Redraw?.Invoke();
 					}
 					break;
