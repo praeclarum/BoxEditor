@@ -7,6 +7,26 @@ using NGraphics;
 
 namespace BoxEditor
 {
+	public static class PathPlanning
+	{
+		public static DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+		{
+			var planner = new VisibilityPlanner();
+			return planner.Plan(boxes, arrows);
+		}
+	}
+
+	public class DiagramPaths
+	{
+		public readonly ImmutableArray<PlannedPath> ArrowPaths;
+		public readonly ImmutableArray<IDrawable> DebugDrawings;
+		public DiagramPaths(ImmutableArray<PlannedPath> arrowPaths, ImmutableArray<IDrawable> debugDrawings)
+		{
+			ArrowPaths = arrowPaths;
+			DebugDrawings = debugDrawings;
+		}
+	}
+
 	public class PlannedPath
 	{
 		public readonly ImmutableArray<Point> Points;
@@ -16,29 +36,9 @@ namespace BoxEditor
 		}
 	}
 
-	public class DiagramPaths
-	{
-		public readonly ImmutableArray<PlannedPath> ArrowPaths;
-		public readonly ImmutableArray<IDrawable> DebugDrawings;
-		public DiagramPaths (ImmutableArray<PlannedPath> arrowPaths, ImmutableArray<IDrawable> debugDrawings)
-		{
-			ArrowPaths = arrowPaths;
-			DebugDrawings = debugDrawings;
-		}
-	}
-
 	public interface IPathPlanner
 	{
 		DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows);
-	}
-
-	public static class PathPlanning
-	{
-		public static DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
-		{
-			var planner = new VisibilityPlanner();
-			return planner.Plan(boxes, arrows);
-		}
 	}
 
 	public class DumbPlanner : IPathPlanner
@@ -60,65 +60,199 @@ namespace BoxEditor
 
 	public class VisibilityPlanner : IPathPlanner
 	{
-		class Node
+		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+		{
+			var arrowPaths = new List<PlannedPath>();
+			var debugs = new List<IDrawable>();
+
+			var vmap = new VisibilityMap(boxes);
+			var graph = new Graph(vmap);
+
+			foreach (var b in boxes)
+			{
+				var bb = b.PortBoundingBox;
+				var mb = bb.GetInflated(b.Style.Margin);
+				graph.AddVertex(mb.TopLeft);
+				graph.AddVertex(mb.TopRight);
+				graph.AddVertex(mb.BottomLeft);
+				graph.AddVertex(mb.BottomRight);
+			}
+			foreach (var a in arrows)
+			{
+				var sp = a.Start.PortPoint;
+				var ep = a.End.PortPoint;
+
+				//
+				// Ignore the box if the port is actually
+				// inside the bounding box
+				//
+				var sbb = a.StartBox.PortBoundingBox;
+				sbb.Inflate(-sbb.Size * 0.005);
+				var sIgBox = sbb.Contains(sp) ? boxes.IndexOf(a.StartBox) : -1;
+
+				var ebb = a.EndBox.PortBoundingBox;
+				ebb.Inflate(-ebb.Size * 0.005);
+				var eIgBox = ebb.Contains(ep) ? boxes.IndexOf(a.EndBox) : -1;
+
+				//
+				// Add the nodes ready for planning
+				//
+				var startNode = graph.AddVertex(sp, sIgBox);
+				var endNode = graph.AddVertex(ep, eIgBox);
+
+				var nodePath = AStar(graph, startNode, endNode);
+
+				graph.RemoveVertex(startNode);
+				graph.RemoveVertex(endNode);
+
+				var points = nodePath.Select(n => n.Point);
+				var pp = new PlannedPath(points.ToImmutableArray());
+				arrowPaths.Add(pp);
+			}
+			debugs.AddRange(graph.Vertices.Select(n =>
+			{
+				var c = n.IgnoreBox >= 0 ? Colors.Red : Colors.Blue;
+				return new Ellipse(n.Point-new Size(4), new Size(8), brush: new SolidBrush(c));
+			}));
+
+			return new DiagramPaths(arrowPaths.ToImmutableArray(), debugs.ToImmutableArray());
+		}
+
+		/// <summary>
+		/// "Theta*: Any-Angle Path Planning on Grids"
+		/// - Kenny Daniel, Alex Nash, Sven Koenig - University of Southern California
+		/// </summary>
+		List<Vertex> AStar(Graph graph, Vertex startVert, Vertex endVert)
+		{
+			//
+			// Initialize
+			//
+			graph.InitializeAStar(endVert);
+			startVert.G = 0;
+			startVert.Parent = startVert;
+
+			//
+			// Loop
+			//
+
+			//
+			// Safety...
+			//
+			if (endVert.Parent == null)
+			{
+				endVert.Parent = startVert;
+			}
+
+			//
+			// Walk backwards to get the path
+			//
+			var r = new List<Vertex>();
+			var rn = endVert;
+			while (rn != null && rn != startVert)
+			{
+				r.Add(rn);
+				rn = rn.Parent;
+			}
+			r.Add(startVert);
+			r.Reverse();
+			return r;
+		}
+
+		class Vertex
 		{
 			public readonly Point Point;
 			public readonly int IgnoreBox;
-			public List<Node> Neighbors;
-			public Node(Point point, int ignoreBox)
+
+			//
+			// Retained between A* runs
+			//
+			public List<Vertex> Neighbors;
+
+			//
+			// Reset for each A* run
+			//
+
+			/// <summary>
+			/// Preview vertex on the path.
+			/// </summary>
+			public Vertex Parent;
+			/// <summary>
+			/// Accumulated distance along the path.
+			/// </summary>
+			public double G;
+			/// <summary>
+			/// Distance to the goal.
+			/// </summary>
+			public double H;
+			/// <summary>
+			/// True if a member of the closed set.
+			/// </summary>
+			public bool IsClosed;
+
+			public Vertex(Point point, int ignoreBox)
 			{
 				Point = point;
 				IgnoreBox = ignoreBox;
 			}
 		}
 
-		class NodeMap
+		class Graph
 		{
 			readonly VisibilityMap vmap;
-			public NodeMap(VisibilityMap vmap)
+			public Graph(VisibilityMap vmap)
 			{
 				this.vmap = vmap;
 			}
-			public readonly List<Node> Nodes = new List<Node>();
-			public Node AddNode(Point p, int ignoreBox = -1)
+			public readonly List<Vertex> Vertices = new List<Vertex>();
+			public Vertex AddVertex(Point p, int ignoreBox = -1)
 			{
 				//
 				// Add it to the list
 				//
-				var node = new Node(p, ignoreBox);
+				var vert = new Vertex(p, ignoreBox);
 
 				//
 				// Calculate its visibility
 				//
-				foreach (var n in Nodes)
+				foreach (var n in Vertices)
 				{
 					if (n.Neighbors == null) continue;
-					if (vmap.LineOfSight(n.Point, node.Point))
+					if (vmap.LineOfSight(n.Point, vert.Point))
 					{
-						n.Neighbors.Add(node);
+						n.Neighbors.Add(vert);
 					}
 				}
 
-				Nodes.Add(node);
-				return node;
+				Vertices.Add(vert);
+				return vert;
 			}
-			public void RemoveNode(Node node)
+			public void RemoveVertex(Vertex vert)
 			{
-				Nodes.Remove(node);
-				foreach (var n in Nodes)
+				Vertices.Remove(vert);
+				foreach (var n in Vertices)
 				{
-					n.Neighbors?.Remove(node);
+					n.Neighbors?.Remove(vert);
+					if (n.Parent == vert) n.Parent = null;
+				}
+			}
+			public void InitializeAStar(Vertex endVert)
+			{
+				foreach (var v in Vertices)
+				{
+					v.Parent = null;
+					v.G = double.MaxValue;
+					v.H = v.Point.DistanceTo(endVert.Point);
+					v.IsClosed = false;
 				}
 			}
 		}
 
 		class VisibilityMap
 		{
-			readonly ImmutableArray<Box> boxes;
 			readonly Point[] bounds;
+
 			public VisibilityMap(ImmutableArray<Box> boxes)
 			{
-				this.boxes = boxes;
 				bounds = new Point[boxes.Length * 2];
 				for (int i = 0; i < boxes.Length; i++)
 				{
@@ -128,9 +262,10 @@ namespace BoxEditor
 					bounds[i * 2 + 1] = bb.BottomRight;
 				}
 			}
+
 			/// <summary>
 			/// "An Efficient and Robust Ray–Box Intersection Algorithm"
-			/// - Amy Williams Steve Barrus R. Keith Morley Peter Shirley - University of Utah
+			/// - Amy Williams, Steve Barrus, R. Keith Morley, Peter Shirley - University of Utah
 			/// </summary>
 			public bool LineOfSight(Point origin, Point destination)
 			{
@@ -169,7 +304,7 @@ namespace BoxEditor
 
 					if (isect)
 					{
-						Debug.WriteLine($"ISECT [{bounds[i]},{bounds[i+1]}] with <{origin},{destination}>");
+						Debug.WriteLine($"ISECT [{bounds[i]},{bounds[i + 1]}] with <{origin},{destination}>");
 						return false;
 					}
 				}
@@ -177,69 +312,6 @@ namespace BoxEditor
 				// No intersections
 				return true;
 			}
-		}
-
-		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
-		{
-			var arrowPaths = new List<PlannedPath>();
-			var debugs = new List<IDrawable>();
-
-			var vmap = new VisibilityMap(boxes);
-			var nodes = new NodeMap(vmap);
-
-			foreach (var b in boxes)
-			{
-				var bb = b.PortBoundingBox;
-				var mb = bb.GetInflated(b.Style.Margin);
-				nodes.AddNode(mb.TopLeft);
-				nodes.AddNode(mb.TopRight);
-				nodes.AddNode(mb.BottomLeft);
-				nodes.AddNode(mb.BottomRight);
-			}
-			foreach (var a in arrows)
-			{
-				var sp = a.Start.PortPoint;
-				var ep = a.End.PortPoint;
-
-				//
-				// Ignore the box if the port is actually
-				// inside the bounding box
-				//
-				var sbb = a.StartBox.PortBoundingBox;
-				sbb.Inflate(-sbb.Size * 0.005);
-				var sIgBox = sbb.Contains(sp) ? boxes.IndexOf(a.StartBox) : -1;
-
-				var ebb = a.EndBox.PortBoundingBox;
-				ebb.Inflate(-ebb.Size * 0.005);
-				var eIgBox = ebb.Contains(ep) ? boxes.IndexOf(a.EndBox) : -1;
-
-				//
-				// Add the nodes ready for planning
-				//
-				var startNode = nodes.AddNode(sp, sIgBox);
-				var endNode = nodes.AddNode(ep, eIgBox);
-
-				PlanPath(startNode, endNode);
-
-				//nodes.RemoveNode(startNode);
-				//nodes.RemoveNode(endNode);
-
-				var points = new[] { sp, ep };
-				var pp = new PlannedPath(points.ToImmutableArray());
-				arrowPaths.Add(pp);
-			}
-			debugs.AddRange(nodes.Nodes.Select(n =>
-			{
-				var c = n.IgnoreBox >= 0 ? Colors.Red : Colors.Blue;
-				return new Ellipse(n.Point-new Size(4), new Size(8), brush: new SolidBrush(c));
-			}));
-
-			return new DiagramPaths(arrowPaths.ToImmutableArray(), debugs.ToImmutableArray());
-		}
-
-		void PlanPath(Node startNode, Node endNode)
-		{
-			//throw new NotImplementedException();
 		}
 	}
 }
