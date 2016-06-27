@@ -66,9 +66,10 @@ namespace BoxEditor
 				for (var i = 1; i < Points.Length; i++)
 				{
 					var pti = Points[i];
+
 					var d = pti - pt;
 					var dist = d.Distance;
-					var cdist = dist * 0.25;
+					var cdisti = dist * 0.25;
 
 					var diri = endDir;
 					if (i + 1 < Points.Length)
@@ -82,8 +83,8 @@ namespace BoxEditor
 						diri = (pt - pti).Normalized;
 					}
 
-					var c1 = pt + dir * cdist;
-					var c2 = pti + diri * cdist;
+					var c1 = pt + dir * cdisti;
+					var c2 = pti + diri * cdisti;
 					p.CurveTo(c1, c2, Points[i]);
 					pt = pti;
 					dir = -diri;
@@ -227,7 +228,7 @@ namespace BoxEditor
 				//
 				if (s == endVert)
 				{
-					Debug.WriteLine($"PATH FOUND");
+					//Debug.WriteLine($"PATH FOUND");
 					break;
 				}
 
@@ -281,7 +282,7 @@ namespace BoxEditor
 			//
 			if (endVert.Parent == null)
 			{
-				Debug.WriteLine($"PATH NOT FOUND");
+				//Debug.WriteLine($"PATH NOT FOUND");
 				endVert.Parent = s ?? startVert;
 			}
 
