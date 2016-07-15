@@ -101,7 +101,7 @@ namespace BoxEditor.Mac
 			var ctrl = mods.HasFlag(NSEventModifierMask.ControlKeyMask);
 			return new TouchEvent
 			{
-				TouchId = theEvent.Type != NSEventType.Magnify ? theEvent.EventNumber : 0L,
+				TouchId = theEvent.Type != NSEventType.ScrollWheel && theEvent.Type != NSEventType.Magnify ? theEvent.EventNumber : 0L,
 				Location = new Point(loc.X, loc.Y),
 				IsShiftDown = shift,
 				IsCommandDown = cmd,
@@ -113,20 +113,43 @@ namespace BoxEditor.Mac
 		{
 			base.MagnifyWithEvent(theEvent);
 			var e = GetTouchEvent(theEvent);
+			var arg = theEvent.Magnification;
 			switch (theEvent.Phase)
 			{
 			case NSEventPhase.Began:
-				editor.MagnificationBegan(theEvent.Magnification, e);
+					editor.MagnificationBegan(arg, e);
 				break;
 			case NSEventPhase.Changed:
-				editor.MagnificationChanged(theEvent.Magnification, e);
+					editor.MagnificationChanged(arg, e);
 				break;
 			case NSEventPhase.Ended:
-				editor.MagnificationEnded(theEvent.Magnification, e);
+					editor.MagnificationEnded(arg, e);
 				break;
 			case NSEventPhase.Cancelled:
-				editor.MagnificationCancelled(theEvent.Magnification, e);
+					editor.MagnificationCancelled(arg, e);
 				break;
+			}
+		}
+
+		public override void ScrollWheel(NSEvent theEvent)
+		{
+			base.ScrollWheel(theEvent);
+			var e = GetTouchEvent(theEvent);
+			var arg = new Point (theEvent.ScrollingDeltaX, theEvent.ScrollingDeltaY);
+			switch (theEvent.Phase)
+			{
+				case NSEventPhase.Began:
+					editor.ScrollBegan(arg, e);
+					break;
+				case NSEventPhase.Changed:
+					editor.ScrollChanged(arg, e);
+					break;
+				case NSEventPhase.Ended:
+					editor.ScrollEnded(arg, e);
+					break;
+				case NSEventPhase.Cancelled:
+					editor.ScrollCancelled(arg, e);
+					break;
 			}
 		}
 

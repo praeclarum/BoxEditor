@@ -294,7 +294,6 @@ namespace BoxEditor
 		{
 			magLoc = ViewToDiagram(touch.Location);
 		}
-
 		public void MagnificationChanged(double magnification, TouchEvent touch)
 		{
 			//Debug.WriteLine("MC {0}", magnification);
@@ -305,15 +304,30 @@ namespace BoxEditor
 			viewToDiagram = t;
 			Redraw?.Invoke();
 		}
-
 		public void MagnificationEnded(double magnification, TouchEvent touch)
 		{
 		}
-
 		public void MagnificationCancelled(double magnification, TouchEvent touch)
 		{
 		}
 
+		public void ScrollBegan(Point scroll, TouchEvent touch)
+		{
+		}
+		public void ScrollChanged(Point scroll, TouchEvent touch)
+		{
+			Debug.WriteLine("SC {0}", scroll);
+			var offset = Transform.Translate(-scroll / DiagramToViewScale);
+			var t = offset * viewToDiagram;
+			viewToDiagram = t;
+			Redraw?.Invoke();
+		}
+		public void ScrollEnded(Point scroll, TouchEvent touch)
+		{
+		}
+		public void ScrollCancelled(Point scroll, TouchEvent touch)
+		{
+		}
 
 		enum TouchGesture
 		{
