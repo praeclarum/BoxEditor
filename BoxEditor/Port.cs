@@ -9,11 +9,11 @@ namespace BoxEditor
 		public readonly Rect RelativeFrame;
 		public readonly Point Direction;
 
-		public Port(object value, Rect relativeFrame, Point directions)
+		public Port(object value, Rect relativeFrame, Point direction)
         {
             Value = value;
             RelativeFrame = relativeFrame;
-			Direction = directions;
+			Direction = direction;
         }
 
 		public Port Move(Point d)
