@@ -7,6 +7,10 @@ using System.Text;
 
 namespace BoxEditor
 {
+	/// <summary>
+	/// Immutable object representing a "box" that is a collection of "ports".
+	/// Boxes also have a frame, a value, and a style.
+	/// </summary>
 	public class Box : ISelectable
     {
         public readonly object Value;
@@ -22,6 +26,11 @@ namespace BoxEditor
             Ports = ports;
         }
 
+		/// <summary>
+		/// Bounding box built from the ports. This is used
+		/// when routing to prevent overlapping boxes.
+		/// </summary>
+		/// <value>The bounding box of all the ports.</value>
 		public Rect PortBoundingBox
 		{
 			get
@@ -35,6 +44,10 @@ namespace BoxEditor
 			}
 		}
 
+		/// <summary>
+		/// The list of resize handles to display when selected.
+		/// </summary>
+		/// <returns>The points of the resize handles.</returns>
 		public Point[] GetHandlePoints()
 		{
 			return new[] {
@@ -49,11 +62,24 @@ namespace BoxEditor
 			};
 		}
 
+		/// <summary>
+		/// Whether the point is in the Frame of this box.
+		/// </summary>
+		/// <param name="point">The point to test.</param>
 		public bool HitTest(Point point)
 		{
 			return Frame.Contains(point);
 		}
 
+		/// <summary>
+		/// Whether the point is in a resize handle.
+		/// </summary>
+		/// <returns>null if no handle was hit; otherwise,
+		/// the index of the hit handle and the distance to it.</returns>
+		/// <param name="point">The point to test.</param>
+		/// <param name="handleSize">The size of a handle.</param>
+		/// <param name="tolerance">The farthest out from a handle the point
+		/// can be while still considered a hit.</param>
 		public Tuple<int, double> HitTestHandles(Point point, Size handleSize, double tolerance)
 		{
 			//			Console.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
@@ -75,17 +101,32 @@ namespace BoxEditor
 			return q.FirstOrDefault();
 		}
 
+		/// <summary>
+		/// Get a new box with a new Frame.
+		/// </summary>
+		/// <returns>The new box.</returns>
+		/// <param name="newFrame">The new frame.</param>
 		public Box WithFrame(Rect newFrame)
 		{
 			return new Box (Value, newFrame, Style, Ports);
 		}
 
+		/// <summary>
+		/// Get a new box moved by a distance d.
+		/// </summary>
+		/// <param name="d">The distance to move the box.</param>
 		public Box Move(Point d)
 		{
 			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
 			return new Box(Value, newFrame, Style, Ports);
 		}
 
+		/// <summary>
+		/// Get a new box with a resize handle moved by a distance d.
+		/// </summary>
+		/// <returns>The new box.</returns>
+		/// <param name="index">The index of the handle to move.</param>
+		/// <param name="d">The distance to move the handle.</param>
 		public Box MoveHandle(int index, Point d)
 		{
 			var dx = new Point(d.X, 0);
@@ -147,6 +188,12 @@ namespace BoxEditor
 			return WithFrame(newFrame);
 		}
 
+		/// <summary>
+		/// Get a list of all the guides this box uses.
+		/// </summary>
+		/// <returns>The drag guides.</returns>
+		/// <param name="offset">Amount to offset this box before getting its guides.</param>
+		/// <param name="boxIndex">A box index to store in the guides.</param>
 		public IEnumerable<DragGuide> GetDragGuides(Point offset, int boxIndex)
 		{
 			yield return DragGuide.Vertical(Frame.Center.X + offset.X, DragGuideSource.CenterV, boxIndex);
@@ -178,6 +225,9 @@ namespace BoxEditor
 		}
 	}
 
+	/// <summary>
+	/// Mutable object to help construct immutable Boxes.
+	/// </summary>
 	public class BoxBuilder
     {
         public object Value;
@@ -185,22 +235,41 @@ namespace BoxEditor
         public List<Port> Ports = new List<Port>();
 		public BoxStyle Style = BoxStyle.Default;
 
-		public void AddPort(object value, Rect relativeFrame, Point directions)
+		/// <summary>
+		/// Add a port given its frame.
+		/// </summary>
+		/// <param name="value">The value to associate with the port.</param>
+		/// <param name="relativeFrame">The frame of the port relative to the box's frame.</param>
+		/// <param name="direction">Direction arrows should leave this port.</param>
+		public void AddPort(object value, Rect relativeFrame, Point direction)
         {
-			Ports.Add(new Port(value, relativeFrame, directions));
+			Ports.Add(new Port(value, relativeFrame, direction));
         }
 
-		public void AddPort(object value, Point relativePoint, Point directions)
+		/// <summary>
+		/// Add a port given its location.
+		/// </summary>
+		/// <param name="value">The value to associate with the port.</param>
+		/// <param name="relativePoint">The location of the port relative to the box's frame.</param>
+		/// <param name="direction">Direction arrows should leave this port.</param>
+		public void AddPort(object value, Point relativePoint, Point direction)
 		{
-			Ports.Add(new Port(value, new Rect(relativePoint, Size.Zero), directions));
+			Ports.Add(new Port(value, new Rect(relativePoint, Size.Zero), direction));
 		}
 
+		/// <summary>
+		/// Get the immutable box as a snapshot of this builder.
+		/// </summary>
+		/// <returns>The box.</returns>
         public Box ToBox()
         {
 			return new Box(Value, Frame, Style, Ports.ToImmutableArray());
         }
     }
 
+	/// <summary>
+	/// Immutable styling information for boxes.
+	/// </summary>
 	public class BoxStyle
 	{
 		public readonly Color BackgroundColor;
