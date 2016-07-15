@@ -255,7 +255,7 @@ namespace BoxEditor
 			Redraw?.Invoke();
 		}
 
-		public void TouchCanceled(TouchEvent touch)
+		public void TouchCancelled(TouchEvent touch)
         {
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
@@ -287,6 +287,33 @@ namespace BoxEditor
 				Redraw?.Invoke();
 			}
 		}
+
+		Point magLoc;
+
+		public void MagnificationBegan(double magnification, TouchEvent touch)
+		{
+			magLoc = ViewToDiagram(touch.Location);
+		}
+
+		public void MagnificationChanged(double magnification, TouchEvent touch)
+		{
+			//Debug.WriteLine("MC {0}", magnification);
+			var scale = Transform.Scale(1.0 - magnification, 1.0 - magnification);
+			var offset = Transform.Translate(magLoc);
+			var offsetn = Transform.Translate(-magLoc);
+			var t = offset * scale * offsetn * viewToDiagram;
+			viewToDiagram = t;
+			Redraw?.Invoke();
+		}
+
+		public void MagnificationEnded(double magnification, TouchEvent touch)
+		{
+		}
+
+		public void MagnificationCancelled(double magnification, TouchEvent touch)
+		{
+		}
+
 
 		enum TouchGesture
 		{

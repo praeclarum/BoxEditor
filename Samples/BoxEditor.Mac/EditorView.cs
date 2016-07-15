@@ -101,12 +101,33 @@ namespace BoxEditor.Mac
 			var ctrl = mods.HasFlag(NSEventModifierMask.ControlKeyMask);
 			return new TouchEvent
 			{
-				TouchId = theEvent.EventNumber,
+				TouchId = theEvent.Type != NSEventType.Magnify ? theEvent.EventNumber : 0L,
 				Location = new Point(loc.X, loc.Y),
 				IsShiftDown = shift,
 				IsCommandDown = cmd,
-				IsControlDown = cmd,
+				IsControlDown = ctrl,
 			};
+		}
+
+		public override void MagnifyWithEvent(NSEvent theEvent)
+		{
+			base.MagnifyWithEvent(theEvent);
+			var e = GetTouchEvent(theEvent);
+			switch (theEvent.Phase)
+			{
+			case NSEventPhase.Began:
+				editor.MagnificationBegan(theEvent.Magnification, e);
+				break;
+			case NSEventPhase.Changed:
+				editor.MagnificationChanged(theEvent.Magnification, e);
+				break;
+			case NSEventPhase.Ended:
+				editor.MagnificationEnded(theEvent.Magnification, e);
+				break;
+			case NSEventPhase.Cancelled:
+				editor.MagnificationCancelled(theEvent.Magnification, e);
+				break;
+			}
 		}
 
 		public override void MouseDown(NSEvent theEvent)
@@ -136,7 +157,7 @@ namespace BoxEditor.Mac
 		public override void MouseExited(NSEvent theEvent)
 		{
 			base.MouseUp(theEvent);
-			editor.TouchCanceled(GetTouchEvent(theEvent));
+			editor.TouchCancelled(GetTouchEvent(theEvent));
 		}
 	}
 }
