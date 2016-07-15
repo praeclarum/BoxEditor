@@ -316,7 +316,7 @@ namespace BoxEditor
 		}
 		public void ScrollChanged(Point scroll, TouchEvent touch)
 		{
-			Debug.WriteLine("SC {0}", scroll);
+			//Debug.WriteLine("SC {0}", scroll);
 			var offset = Transform.Translate(-scroll / DiagramToViewScale);
 			var t = offset * viewToDiagram;
 			viewToDiagram = t;
@@ -571,8 +571,9 @@ namespace BoxEditor
 				var b = hoverSelection as Box;
 				if (b != null)
 				{
-					var f = b.Frame.GetInflated(2, 2);
-					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, 2);
+					var selWidth = 2.0;
+					var f = b.Frame.GetInflated(b.Style.BorderWidth / 2.0 + selWidth / 2.0);
+					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, selWidth);
 				}
 				else {
 					var a = hoverSelection as Arrow;
