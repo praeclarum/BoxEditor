@@ -456,5 +456,10 @@ namespace BoxEditor
 			HoverSelectionColor = hoverSelectionColor;
 			DragGuideColor = dragGuideColor;
 		}
+
+		public DiagramStyle WithBackgroundColor(Color color)
+		{
+			return new DiagramStyle(color, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor);
+		}
 	}
 }
