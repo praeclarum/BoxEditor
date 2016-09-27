@@ -13,14 +13,17 @@ namespace BoxEditor
 	/// </summary>
 	public class Box : ISelectable
     {
-        public readonly object Value;
+		public readonly object id;
+		public object Id => id;
+		public readonly object Value;
         public readonly Rect Frame;
 		public readonly BoxStyle Style;
         public readonly ImmutableArray<Port> Ports;
 
-		public Box(object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
+		public Box(object id, object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
         {
-            Value = value;
+			this.id = id;
+			Value = value;
             Frame = frame;
 			Style = style;
             Ports = ports;
@@ -108,7 +111,7 @@ namespace BoxEditor
 		/// <param name="newFrame">The new frame.</param>
 		public Box WithFrame(Rect newFrame)
 		{
-			return new Box (Value, newFrame, Style, Ports);
+			return new Box (Id, Value, newFrame, Style, Ports);
 		}
 
 		/// <summary>
@@ -118,7 +121,7 @@ namespace BoxEditor
 		public Box Move(Point d)
 		{
 			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
-			return new Box(Value, newFrame, Style, Ports);
+			return new Box(Id, Value, newFrame, Style, Ports);
 		}
 
 		/// <summary>
@@ -230,6 +233,7 @@ namespace BoxEditor
 	/// </summary>
 	public class BoxBuilder
     {
+		public object Id;
         public object Value;
 		public Rect Frame;
         public List<Port> Ports = new List<Port>();
@@ -263,7 +267,7 @@ namespace BoxEditor
 		/// <returns>The box.</returns>
         public Box ToBox()
         {
-			return new Box(Value, Frame, Style, Ports.ToImmutableArray());
+			return new Box(Id, Value, Frame, Style, Ports.ToImmutableArray());
         }
     }
 

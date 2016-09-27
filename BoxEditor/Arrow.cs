@@ -5,7 +5,9 @@ namespace BoxEditor
 {
 	public class Arrow : ISelectable
     {
-        public readonly object Value;
+		public readonly object id;
+		public object Id => id;
+		public readonly object Value;
 		public readonly ArrowStyle Style;
 		public readonly PortRef Start;
         public readonly PortRef End;
@@ -13,8 +15,9 @@ namespace BoxEditor
 		public Box StartBox => Start.Box;
 		public Box EndBox => End.Box;
 
-		public Arrow(object value, ArrowStyle style, PortRef start, PortRef end)
+		public Arrow(object id, object value, ArrowStyle style, PortRef start, PortRef end)
         {
+			this.id = id;
             Value = value;
 			Style = style;
             Start = start;
@@ -23,7 +26,7 @@ namespace BoxEditor
 
 		public Arrow UpdateBox(Box b, Box newb)
 		{
-			return new Arrow(Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
+			return new Arrow(Id, Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
 		}
 	}
 

@@ -13,6 +13,8 @@ namespace BoxEditor
     {
         Diagram diagram = Diagram.Empty;
 
+		public event EventHandler<BoxChangedEventArgs> BoxChanged;
+
         public Diagram Diagram
         {
             get
@@ -21,7 +23,28 @@ namespace BoxEditor
             }
             set
             {
-                diagram = value;
+				var selIds = selection.Where(x => x.Id != null).Select(x => x.Id).ToImmutableHashSet();
+				var hoverId = hoverSelection?.Id;
+                
+				diagram = value;
+
+				var newSels = ImmutableArray.CreateBuilder<ISelectable>();
+				foreach (var b in diagram.Boxes)
+				{
+					if (selIds.Contains(b.Id))
+						newSels.Add(b);
+					if (b.Id == hoverId)
+						hoverSelection = b;
+				}
+				foreach (var b in diagram.Arrows)
+				{
+					if (selIds.Contains(b.Id))
+						newSels.Add(b);
+					if (b.Id == hoverId)
+						hoverSelection = b;
+				}
+				selection = newSels.ToImmutable();
+
                 OnDiagramChanged();
             }
         }
@@ -38,8 +61,15 @@ namespace BoxEditor
 
 		void OnBoxChanged(Box b, Box newb)
 		{
-			selection = selection.Replace(b, newb);
-			if (hoverSelection == b) hoverSelection = newb;
+			var s = selection;
+			if (s.Contains(b))
+				selection = s.Replace(b, newb);
+			if (hoverSelection == b)
+				hoverSelection = newb;
+			BoxChanged?.Invoke(this, new BoxChangedEventArgs {
+				OldBox = b,
+				NewBox = newb
+			});
 		}
 
 		public void ResizeView(Size newViewSize)
@@ -396,6 +426,7 @@ namespace BoxEditor
 
 		class Background : ISelectable
 		{
+			public object Id => "_Background";
 		}
 
 		readonly Background background = new Background();
@@ -658,8 +689,15 @@ namespace BoxEditor
 		}
 	}
 
+	public class BoxChangedEventArgs : EventArgs
+	{
+		public Box OldBox { get; set; }
+		public Box NewBox { get; set; }
+	}
+
 	public interface ISelectable
 	{
+		object Id { get; }
 	}
 
 }
