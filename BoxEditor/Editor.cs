@@ -13,7 +13,7 @@ namespace BoxEditor
     {
         Diagram diagram = Diagram.Empty;
 
-		public event EventHandler<BoxChangedEventArgs> BoxChanged;
+		public event EventHandler<BoxesChangedEventArgs> BoxesChanged;
 
         public Diagram Diagram
         {
@@ -45,7 +45,9 @@ namespace BoxEditor
 				}
 				selection = newSels.ToImmutable();
 
-                OnDiagramChanged();
+				changedBoxes = ImmutableDictionary<object, Box>.Empty;
+
+				OnDiagramChanged();
             }
         }
 
@@ -59,6 +61,8 @@ namespace BoxEditor
 			diagram = newDiagram;
 		}
 
+		ImmutableDictionary<object, Box> changedBoxes = ImmutableDictionary<object, Box>.Empty;
+
 		void OnBoxChanged(Box b, Box newb)
 		{
 			var s = selection;
@@ -66,10 +70,8 @@ namespace BoxEditor
 				selection = s.Replace(b, newb);
 			if (hoverSelection == b)
 				hoverSelection = newb;
-			BoxChanged?.Invoke(this, new BoxChangedEventArgs {
-				OldBox = b,
-				NewBox = newb
-			});
+
+			changedBoxes = changedBoxes.SetItem(newb.Id, newb);
 		}
 
 		public void ResizeView(Size newViewSize)
@@ -276,6 +278,15 @@ namespace BoxEditor
 
 		public void TouchEnded(TouchEvent touch)
         {
+			if (changedBoxes.Count > 0)
+			{
+				BoxesChanged?.Invoke(this, new BoxesChangedEventArgs
+				{
+					Boxes = changedBoxes.Values.ToImmutableArray()
+				});
+				changedBoxes = ImmutableDictionary<object, Box>.Empty;
+			}
+
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
 			dragLastBoxes = ImmutableArray<Box>.Empty;
@@ -287,6 +298,15 @@ namespace BoxEditor
 
 		public void TouchCancelled(TouchEvent touch)
         {
+			if (changedBoxes.Count > 0)
+			{
+				BoxesChanged?.Invoke(this, new BoxesChangedEventArgs
+				{
+					Boxes = changedBoxes.Values.ToImmutableArray()
+				});
+				changedBoxes = ImmutableDictionary<object, Box>.Empty;
+			}
+				
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
 			dragLastBoxes = ImmutableArray<Box>.Empty;
@@ -689,10 +709,9 @@ namespace BoxEditor
 		}
 	}
 
-	public class BoxChangedEventArgs : EventArgs
+	public class BoxesChangedEventArgs : EventArgs
 	{
-		public Box OldBox { get; set; }
-		public Box NewBox { get; set; }
+		public ImmutableArray<Box> Boxes { get; set; }
 	}
 
 	public interface ISelectable
