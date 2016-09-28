@@ -5,8 +5,8 @@ namespace BoxEditor
 {
 	public class Arrow : ISelectable
     {
-		public readonly object id;
-		public object Id => id;
+		public readonly string id;
+		public string Id => id;
 		public readonly object Value;
 		public readonly ArrowStyle Style;
 		public readonly PortRef Start;
@@ -15,7 +15,7 @@ namespace BoxEditor
 		public Box StartBox => Start.Box;
 		public Box EndBox => End.Box;
 
-		public Arrow(object id, object value, ArrowStyle style, PortRef start, PortRef end)
+		public Arrow(string id, object value, ArrowStyle style, PortRef start, PortRef end)
         {
 			this.id = id;
             Value = value;

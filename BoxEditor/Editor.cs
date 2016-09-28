@@ -14,6 +14,7 @@ namespace BoxEditor
         Diagram diagram = Diagram.Empty;
 
 		public event EventHandler<BoxesChangedEventArgs> BoxesChanged;
+		public event EventHandler SelectionChanged;
 
         public Diagram Diagram
         {
@@ -400,16 +401,43 @@ namespace BoxEditor
 			return selection.Contains(s);
 		}
 
-		public void Select(IEnumerable<ISelectable> selects)
+		public void Select(IEnumerable<string> ids)
 		{
-			selection = selects.ToImmutableArray();
+			var allobjs =
+				diagram.Boxes.OfType<ISelectable>()
+					   .Concat(diagram.Arrows.OfType<ISelectable>())
+					   .ToDictionary(x => x.Id);
+						
 
-			if (selection.Contains(hoverSelection))
+			var sels = new List<ISelectable>();
+			foreach (var id in ids)
 			{
-				hoverSelection = null;
+				ISelectable s;
+				if (allobjs.TryGetValue(id, out s))
+				{
+					sels.Add(s);
+				}
 			}
 
-			Redraw?.Invoke();
+			Select(sels); 
+		}
+
+		public void Select(IEnumerable<ISelectable> selects)
+		{
+			var newSels = selects.ToImmutableArray();
+
+			if (!newSels.SequenceEqual(selection))
+			{
+				selection = newSels;
+
+				if (selection.Contains(hoverSelection))
+				{
+					hoverSelection = null;
+				}
+
+				Redraw?.Invoke();
+				SelectionChanged?.Invoke(this, EventArgs.Empty);
+			}
 		}
 
 		public bool HasSelection
@@ -446,7 +474,7 @@ namespace BoxEditor
 
 		class Background : ISelectable
 		{
-			public object Id => "_Background";
+			public string Id => "_Background";
 		}
 
 		readonly Background background = new Background();
@@ -716,7 +744,7 @@ namespace BoxEditor
 
 	public interface ISelectable
 	{
-		object Id { get; }
+		string Id { get; }
 	}
 
 }

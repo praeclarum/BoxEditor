@@ -13,14 +13,14 @@ namespace BoxEditor
 	/// </summary>
 	public class Box : ISelectable
     {
-		public readonly object id;
-		public object Id => id;
+		public readonly string id;
+		public string Id => id;
 		public readonly object Value;
         public readonly Rect Frame;
 		public readonly BoxStyle Style;
         public readonly ImmutableArray<Port> Ports;
 
-		public Box(object id, object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
+		public Box(string id, object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
         {
 			this.id = id;
 			Value = value;
@@ -233,7 +233,7 @@ namespace BoxEditor
 	/// </summary>
 	public class BoxBuilder
     {
-		public object Id;
+		public string Id;
         public object Value;
 		public Rect Frame;
         public List<Port> Ports = new List<Port>();
