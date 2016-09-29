@@ -245,7 +245,8 @@ namespace BoxEditor
 					{
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
-						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown);
+						var minDist = 8.0 * viewToDiagram.A;
+						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist);
 						var newd = mr.Item1;
 						dragGuides = mr.Item2;
 						UpdateDiagram(newd);

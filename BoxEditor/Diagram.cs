@@ -59,7 +59,7 @@ namespace BoxEditor
 			return new Diagram(newBoxes, newArrows, Style);
 		}
 
-		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset, bool snapToGuides)
+		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset, bool snapToGuides, double minDist)
 		{
 			if (boxes.Length == 0)
 				return Tuple.Create(this, ImmutableArray<DragGuide>.Empty, boxes);
@@ -95,8 +95,6 @@ namespace BoxEditor
 			//Debug.WriteLine($"{staticGuides.Length} STATIC GUIDES");
 			//Debug.WriteLine($"{moveGuides.Length} MOVE GUIDES");
 			//Debug.WriteLine($"{compares.Count} COMPARES");
-
-			var minDist = 8.0;
 
 			var vert =
 				compares.Where(x => x.Item1.IsVertical && Math.Abs(x.Item3) < minDist)
