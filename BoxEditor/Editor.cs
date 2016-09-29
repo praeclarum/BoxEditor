@@ -93,7 +93,11 @@ namespace BoxEditor
 		}
 		public double DiagramToViewScale
 		{
-			get { return viewToDiagram.GetInverse().A; }
+			get { return 1.0 / ViewToDiagramScale; }
+		}
+		public double ViewToDiagramScale
+		{
+			get { return viewToDiagram.A; }
 		}
 
 		Point ViewToDiagram(Point point)
