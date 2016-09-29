@@ -651,7 +651,7 @@ namespace BoxEditor
 				var b = hoverSelection as Box;
 				if (b != null)
 				{
-					var selWidth = 2.0;
+					var selWidth = 2.0 * viewToDiagram.A;
 					var f = b.Frame.GetInflated(b.Style.BorderWidth / 2.0 + selWidth / 2.0);
 					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, selWidth);
 				}
