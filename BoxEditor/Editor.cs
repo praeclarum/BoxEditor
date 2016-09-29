@@ -84,12 +84,12 @@ namespace BoxEditor
 		public Transform ViewToDiagramTransform
 		{
 			get { return viewToDiagram; }
-			set { viewToDiagram = value; }
+			set { viewToDiagram = value; Redraw?.Invoke(); }
 		}
 		public Transform DiagramToViewTransform
 		{
 			get { return viewToDiagram.GetInverse(); }
-			set { viewToDiagram = value.GetInverse(); }
+			set { viewToDiagram = value.GetInverse(); Redraw?.Invoke(); }
 		}
 		public double DiagramToViewScale
 		{
