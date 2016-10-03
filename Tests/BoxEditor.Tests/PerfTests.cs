@@ -49,13 +49,13 @@ namespace BoxEditor.Tests
 		public void Move10WithBigSpread()
 		{
 			var d = CreateDiagram(10, 100, 10000);
-			MoveOneBox(d, TimeSpan.FromSeconds(0.001));
+			MoveOneBox(d, TimeSpan.FromSeconds(0.01));
 		}
 		[Test]
 		public void Move10WithSmallSpread()
 		{
 			var d = CreateDiagram(10, 100, 100);
-			MoveOneBox(d, TimeSpan.FromSeconds(0.001));
+			MoveOneBox(d, TimeSpan.FromSeconds(0.01));
 		}
 		[Test]
 		public void Move1000WithBigSpread()

@@ -151,6 +151,7 @@ namespace BoxEditor
 			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);
 		}
 
+
 		public Diagram PreventOverlaps(IEnumerable<Box> staticBoxes, Point staticOffset)
 		{
 			var d = this;
@@ -160,9 +161,17 @@ namespace BoxEditor
 			var maxIters = 100;
 
 			var offsets = d.Boxes.Select(x => Point.Zero).ToList();
+			var boxFrames = d.Boxes.Select(x => x.FrameWithMargin).ToList();
 
 			var staticBoxSet = staticBoxes
 				.ToImmutableHashSet();
+
+			var quadtree = new Quadtree(1 << 16, 1 << 16, 16);
+			for (var i = 0; i < n; i++)
+			{
+				var b = d.Boxes[i];
+				quadtree.Add(i, b.Frame);
+			}
 
 			for (var iter = 0; iter < maxIters && iterChanged; iter++)
 			{
@@ -170,12 +179,13 @@ namespace BoxEditor
 				for (var i = 0; i < n; i++)
 				{
 					var a = d.Boxes[i];
-
-					for (var j = i + 1; j < n; j++)
+					int j;
+					Point overlap;
+					if (quadtree.GetOverlap(d.Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
 					{
 						var b = d.Boxes[j];
 
-						var overlap = GetMarginOverlap(a, offsets[i], b, offsets[j], staticOffset);
+						//var overlap = GetMarginOverlap(a, offsets[i], b, offsets[j], staticOffset);
 
 						if (Math.Abs(overlap.X) < 1e-5 && Math.Abs(overlap.Y) < 1e-5) continue;
 
@@ -190,7 +200,9 @@ namespace BoxEditor
 								iterChanged = true;
 								var dx = a.Frame.Center.X < b.Frame.Center.X ? 1 : -1;
 								var dy = a.Frame.Center.Y < b.Frame.Center.Y ? 1 : -1;
+								var oldfj = boxFrames[j] + offsets[j];
 								offsets[j] += new Point(dx * overlap.X, dy * overlap.Y);
+								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
 							}
 						}
 						else {
@@ -199,15 +211,21 @@ namespace BoxEditor
 								iterChanged = true;
 								var dx = a.Frame.Center.X < b.Frame.Center.X ? -1 : 1;
 								var dy = a.Frame.Center.Y < b.Frame.Center.Y ? -1 : 1;
+								var oldfi = boxFrames[i] + offsets[i];
 								offsets[i] += new Point(dx * overlap.X, dy * overlap.Y);
+								quadtree.Move(i, oldfi, boxFrames[i] + offsets[i]);
 							}
 							else
 							{
 								iterChanged = true;
 								var dx = a.Frame.Center.X < b.Frame.Center.X ? -1 : 1;
 								var dy = a.Frame.Center.Y < b.Frame.Center.Y ? -1 : 1;
+								var oldfi = boxFrames[i] + offsets[i];
+								var oldfj = boxFrames[j] + offsets[j];
 								offsets[i] += new Point(dx * overlap.X / 2, dy * overlap.Y / 2);
 								offsets[j] -= new Point(dx * overlap.X / 2, dy * overlap.Y / 2);
+								quadtree.Move(i, oldfi, boxFrames[i] + offsets[i]);
+								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
 							}
 						}
 

@@ -38,6 +38,8 @@ namespace BoxEditor
 		{
 		}
 
+		public Rect FrameWithMargin => Frame.GetInflated(Style.Margin);
+
 		/// <summary>
 		/// Bounding box built from the ports. This is used
 		/// when routing to prevent overlapping boxes.
