@@ -38,7 +38,10 @@ namespace BoxEditor.Tests
 			sw.Start();
 			var nd = d.MoveBoxes(d.Boxes.Take(1).ToImmutableArray(), new Point(10, 10), true, 8);
 			sw.Stop();
-			Assert.Less(sw.Elapsed, maxTime, "Move took too long");
+			if (sw.Elapsed > maxTime)
+			{
+				Assert.Fail($"Move took too long: {sw.Elapsed} vs {maxTime}");
+			}
 			return nd.Item1;
 		}
 
