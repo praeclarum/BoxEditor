@@ -160,8 +160,8 @@ namespace BoxEditor
 			var iterChanged = true;
 			var maxIters = 100;
 
-			var offsets = d.Boxes.Select(x => Point.Zero).ToList();
-			var boxFrames = d.Boxes.Select(x => x.FrameWithMargin).ToList();
+			var offsets = d.Boxes.Select(x => Point.Zero).ToArray();
+			var boxFrames = d.Boxes.Select(x => x.FrameWithMargin).ToArray();
 
 			var staticBoxSet = staticBoxes
 				.ToImmutableHashSet();
@@ -180,8 +180,10 @@ namespace BoxEditor
 				{
 					var a = d.Boxes[i];
 					int j;
+					Quadtree.Node jnode;
 					Point overlap;
-					if (quadtree.GetOverlap(d.Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
+
+					if (quadtree.GetOverlap(d.Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap, out jnode))
 					{
 						var b = d.Boxes[j];
 
@@ -202,7 +204,7 @@ namespace BoxEditor
 								var dy = a.Frame.Center.Y < b.Frame.Center.Y ? 1 : -1;
 								var oldfj = boxFrames[j] + offsets[j];
 								offsets[j] += new Point(dx * overlap.X, dy * overlap.Y);
-								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
+								quadtree.Move(j, oldfj, jnode, boxFrames[j] + offsets[j]);
 							}
 						}
 						else {
@@ -213,7 +215,7 @@ namespace BoxEditor
 								var dy = a.Frame.Center.Y < b.Frame.Center.Y ? -1 : 1;
 								var oldfi = boxFrames[i] + offsets[i];
 								offsets[i] += new Point(dx * overlap.X, dy * overlap.Y);
-								quadtree.Move(i, oldfi, boxFrames[i] + offsets[i]);
+								quadtree.Move(i, oldfi, null, boxFrames[i] + offsets[i]);
 							}
 							else
 							{
@@ -224,8 +226,8 @@ namespace BoxEditor
 								var oldfj = boxFrames[j] + offsets[j];
 								offsets[i] += new Point(dx * overlap.X / 2, dy * overlap.Y / 2);
 								offsets[j] -= new Point(dx * overlap.X / 2, dy * overlap.Y / 2);
-								quadtree.Move(i, oldfi, boxFrames[i] + offsets[i]);
-								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
+								quadtree.Move(i, oldfi, null, boxFrames[i] + offsets[i]);
+								quadtree.Move(j, oldfj, jnode, boxFrames[j] + offsets[j]);
 							}
 						}
 
@@ -244,36 +246,6 @@ namespace BoxEditor
 			d = d.UpdateBoxes(newBs);
 
 			return d;
-		}
-
-		Point GetMarginOverlap(Box a, Point ao, Box b, Point bo, Point offset)
-		{
-			var maxMargin = new Size(Math.Max(a.Style.Margin.Width, b.Style.Margin.Width),
-									 Math.Max(a.Style.Margin.Height, b.Style.Margin.Height));
-			var amr = a.Frame.GetInflated(maxMargin / 2) + ao;
-			var bmr = b.Frame.GetInflated(maxMargin / 2) + bo;
-			if (amr.Intersects(bmr))
-			{
-				var dx1 = bmr.Right - amr.Left;
-				var dx2 = amr.Right - bmr.Left;
-				var dx = (Math.Abs(dx1) <= Math.Abs(dx2)) ? dx1 : dx2;
-				var dy1 = bmr.Bottom - amr.Top;
-				var dy2 = amr.Bottom - bmr.Top;
-				var dy = (Math.Abs(dy1) <= Math.Abs(dy2)) ? dy1 : dy2;
-				if (Math.Abs(dx) <= Math.Abs(dy))
-				{
-					dy = 0;
-				}
-				else
-				{
-					dx = 0;
-				};
-				//Debug.WriteLine($"{DateTime.Now} DX = {dx} AMR = {amr}");
-				return new Point(dx, dy);
-			}
-			else {
-				return Point.Zero;
-			}
 		}
 
 		public static Diagram Create(

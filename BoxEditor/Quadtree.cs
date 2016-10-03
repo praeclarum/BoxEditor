@@ -8,19 +8,13 @@ namespace BoxEditor
 {
 	class Quadtree
 	{
-		struct Value
-		{
-			public int Box;
-			public Rect Frame;
-		}
-
-		class Node
+		public class Node
 		{
 			public readonly int Depth;
 			public readonly Rect Frame;
 			public readonly Node[] Children = new Node[4];
 			public readonly Rect[] ChildFrames;
-			public List<Value> Values;
+			public List<int> Values;
 			public Node(int depth, Rect frame)
 			{
 				Depth = depth;
@@ -29,20 +23,12 @@ namespace BoxEditor
 			}
 			public void AddValue(int box, Rect boxFrame)
 			{
-				if (Values == null) Values = new List<Value>();
-				Values.Add(new Value { Box = box, Frame = boxFrame });
+				if (Values == null) Values = new List<int>();
+				Values.Add(box);
 			}
 			public void RemoveValue(int box)
 			{
-				if (Values == null) return;
-				for (var i = 0; i < Values.Count; i++)
-				{
-					if (Values[i].Box == box)
-					{
-						Values.RemoveAt(i);
-						return;
-					}
-				}
+				Values?.Remove(box);
 			}
 			static Rect[] CalculateChildFrames(Rect parentFrame)
 			{
@@ -76,9 +62,9 @@ namespace BoxEditor
 			n.AddValue(box, boxFrame);
 		}
 
-		public void Move(int box, Rect oldFrame, Rect newFrame)
+		public void Move(int box, Rect oldFrame, Node oldNode, Rect newFrame)
 		{
-			var oldn = NodeForFrame(oldFrame);
+			var oldn = oldNode ?? NodeForFrame(oldFrame);
 			var newn = NodeForFrame(newFrame);
 			oldn.RemoveValue(box);
 			newn.AddValue(box, newFrame);
@@ -123,7 +109,7 @@ namespace BoxEditor
 			throw new Exception($"Failed to find node for {boxFrame}");
 		}
 
-		public bool GetOverlap(ImmutableArray<Box> boxes, List<Point> offsets, int box, Rect boxFrame, out int otherBox, out Point overlap)
+		public bool GetOverlap(ImmutableArray<Box> boxes, Point[] offsets, int box, Rect boxFrame, out int otherBox, out Point overlap, out Node otherNode)
 		{
 			otherBox = -1;
 			overlap = Point.Zero;
@@ -140,16 +126,16 @@ namespace BoxEditor
 				{
 					for (var i = 0; i < m.Values.Count; i++)
 					{
-						if (m.Values[i].Box == box) continue;
+						if (m.Values[i] == box) continue;
 
 						var a = boxes[box];
-						var b = boxes[m.Values[i].Box];
+						var b = boxes[m.Values[i]];
 
 						var maxMargin = new Size(
 							Math.Max(a.Style.Margin.Width, b.Style.Margin.Width),
 							Math.Max(a.Style.Margin.Height, b.Style.Margin.Height));
 						var amr = a.Frame.GetInflated(maxMargin / 2) + offsets[box];
-						var bmr = b.Frame.GetInflated(maxMargin / 2) + offsets[m.Values[i].Box];
+						var bmr = b.Frame.GetInflated(maxMargin / 2) + offsets[m.Values[i]];
 						if (amr.Intersects(bmr))
 						{
 							var dx1 = bmr.Right - amr.Left;
@@ -167,8 +153,9 @@ namespace BoxEditor
 								dx = 0;
 							};
 							//Debug.WriteLine($"{DateTime.Now} DX = {dx} AMR = {amr}");
-							otherBox = m.Values[i].Box;
+							otherBox = m.Values[i];
 							overlap = new Point(dx, dy);
+							otherNode = m;
 							return true;
 						}
 					}
@@ -185,6 +172,7 @@ namespace BoxEditor
 
 			otherBox = -1;
 			overlap = Point.Zero;
+			otherNode = null;
 			return false;
 		}
 	}
