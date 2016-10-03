@@ -26,9 +26,30 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="nunit.framework">
+      <HintPath>..\..\packages\NUnit.2.6.4\lib\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="NGraphics">
+      <HintPath>..\..\packages\NGraphics.0.4.0\lib\net45\NGraphics.dll</HintPath>
+    </Reference>
+    <Reference Include="NGraphics.Net">
+      <HintPath>..\..\packages\NGraphics.0.4.0\lib\net45\NGraphics.Net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable">
+      <HintPath>..\..\packages\System.Collections.Immutable.1.2.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Test.cs" />
+    <Compile Include="PerfTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\BoxEditor\BoxEditor.csproj">
+      <Project>{B53B1301-7D19-4EAE-8FC1-BE0EA1882BAB}</Project>
+      <Name>BoxEditor</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

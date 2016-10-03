@@ -9,6 +9,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{FBDB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxEditor.Mac", "Samples\BoxEditor.Mac\BoxEditor.Mac.csproj", "{973E42CB-8633-44C1-AEB7-2F2B084ECC96}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C08BA623-56F2-44B2-BFAD-5FE19FF93D10}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoxEditor.Tests", "Tests\BoxEditor.Tests\BoxEditor.Tests.csproj", "{76454475-6CBB-466F-A102-985770C0AE55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,11 +27,16 @@ Global
 		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{973E42CB-8633-44C1-AEB7-2F2B084ECC96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76454475-6CBB-466F-A102-985770C0AE55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76454475-6CBB-466F-A102-985770C0AE55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76454475-6CBB-466F-A102-985770C0AE55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76454475-6CBB-466F-A102-985770C0AE55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{973E42CB-8633-44C1-AEB7-2F2B084ECC96} = {FBDB577B-C367-4802-B88A-B29E7B86DE84}
+		{76454475-6CBB-466F-A102-985770C0AE55} = {C08BA623-56F2-44B2-BFAD-5FE19FF93D10}
 	EndGlobalSection
 EndGlobal
