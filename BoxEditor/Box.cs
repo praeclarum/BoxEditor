@@ -33,6 +33,11 @@ namespace BoxEditor
             Ports = ports;
         }
 
+		public Box(string id, object value, Rect frame, BoxStyle style)
+			: this (id, value, frame, style, ImmutableArray<Port>.Empty)
+		{
+		}
+
 		/// <summary>
 		/// Bounding box built from the ports. This is used
 		/// when routing to prevent overlapping boxes.

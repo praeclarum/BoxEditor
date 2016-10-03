@@ -260,6 +260,20 @@ namespace BoxEditor
 
 		public static Diagram Create(
 			DiagramStyle style,
+			IEnumerable<object> boxValues,
+			Func<object, Box> getBox)
+		{
+			
+			return Create(
+				style,
+				boxValues,
+				Enumerable.Empty<object>(),
+				getBox,
+				(arg1, arg2) => { throw new InvalidOperationException(); });
+		}
+
+		public static Diagram Create(
+			DiagramStyle style,
             IEnumerable<object> boxValues,
             IEnumerable<object> arrowValues,
             Func<object, Box> getBox,
