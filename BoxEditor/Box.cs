@@ -22,6 +22,10 @@ namespace BoxEditor
 
 		public Box(string id, object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
         {
+			if (string.IsNullOrEmpty(id))
+			{
+				throw new ArgumentException("Id must be set");
+			}
 			this.id = id;
 			Value = value;
             Frame = frame;
@@ -267,6 +271,10 @@ namespace BoxEditor
 		/// <returns>The box.</returns>
         public Box ToBox()
         {
+			if (string.IsNullOrEmpty(Id))
+			{
+				throw new InvalidOperationException("Id must be set");
+			}
 			return new Box(Id, Value, Frame, Style, Ports.ToImmutableArray());
         }
     }

@@ -17,6 +17,10 @@ namespace BoxEditor
 
 		public Arrow(string id, object value, ArrowStyle style, PortRef start, PortRef end)
         {
+			if (string.IsNullOrEmpty(id))
+			{
+				throw new ArgumentException("Id must be set");
+			}
 			this.id = id;
             Value = value;
 			Style = style;
