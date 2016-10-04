@@ -34,9 +34,10 @@ namespace BoxEditor.Tests
 
 		Diagram MoveOneBox(Diagram d, TimeSpan maxTime)
 		{
+			var infinite = TimeSpan.FromDays(1000);
 			var sw = new Stopwatch();
 			sw.Start();
-			var nd = d.MoveBoxes(d.Boxes.Take(1).ToImmutableArray(), new Point(10, 10), true, 8);
+			var nd = d.MoveBoxes(d.Boxes.Take(1).ToImmutableArray(), new Point(10, 10), true, 8, infinite);
 			sw.Stop();
 			if (sw.Elapsed > maxTime)
 			{
@@ -49,13 +50,13 @@ namespace BoxEditor.Tests
 		public void Move10WithBigSpread()
 		{
 			var d = CreateDiagram(10, 100, 10000);
-			MoveOneBox(d, TimeSpan.FromSeconds(0.01));
+			MoveOneBox(d, TimeSpan.FromSeconds(0.05));
 		}
 		[Test]
 		public void Move10WithSmallSpread()
 		{
 			var d = CreateDiagram(10, 100, 100);
-			MoveOneBox(d, TimeSpan.FromSeconds(0.01));
+			MoveOneBox(d, TimeSpan.FromSeconds(0.1));
 		}
 		[Test]
 		public void Move1000WithBigSpread()

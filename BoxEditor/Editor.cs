@@ -11,6 +11,8 @@ namespace BoxEditor
 {
     public class Editor
     {
+		readonly TimeSpan MaxConstraintSolveTime = TimeSpan.FromSeconds(0.25);
+		                                                   
         Diagram diagram = Diagram.Empty;
 
 		public event EventHandler<BoxesChangedEventArgs> BoxesChanged;
@@ -250,7 +252,7 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						var minDist = 8.0 * viewToDiagram.A;
-						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist);
+						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
 						var newd = mr.Item1;
 						dragGuides = mr.Item2;
 						UpdateDiagram(newd);
@@ -271,7 +273,7 @@ namespace BoxEditor
 						var newb = dragBoxHandleOriginalBox.MoveHandle(dragBoxHandle, d);
 						var newd = dragDiagram
 							.UpdateBoxes(new[] { Tuple.Create(dragBoxHandleOriginalBox, newb) })
-							.PreventOverlaps(new[] { newb }, Point.Zero);
+							.PreventOverlaps(ImmutableArray.Create(newb), Point.Zero, MaxConstraintSolveTime);
 						UpdateDiagram(newd);
 						OnBoxChanged(dragBoxHandleBox, newb);
 						hoverSelection = null;

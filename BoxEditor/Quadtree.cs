@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using NGraphics;
 
@@ -28,7 +29,12 @@ namespace BoxEditor
 			}
 			public void RemoveValue(int box)
 			{
-				Values?.Remove(box);
+				if (Values == null)
+					throw new ArgumentException($"Box {box} not in {this} (no values)");
+				var i = Values.IndexOf(box);
+				if (i < 0)
+					throw new ArgumentException($"Box {box} not in {this}");
+				Values.RemoveAt(i);
 			}
 			static Rect[] CalculateChildFrames(Rect parentFrame)
 			{
@@ -62,12 +68,15 @@ namespace BoxEditor
 			n.AddValue(box, boxFrame);
 		}
 
-		public void Move(int box, Rect oldFrame, Node oldNode, Rect newFrame)
+		public void Move(int box, Rect oldFrame, Rect newFrame)
 		{
-			var oldn = oldNode ?? NodeForFrame(oldFrame);
+			var oldn = GetNodeForBox(box, oldFrame);
 			var newn = NodeForFrame(newFrame);
-			oldn.RemoveValue(box);
-			newn.AddValue(box, newFrame);
+			if (oldn != newn)
+			{
+				oldn.RemoveValue(box);
+				newn.AddValue(box, newFrame);
+			}
 		}
 
 		Node NodeForFrame(Rect boxFrame)
@@ -109,13 +118,36 @@ namespace BoxEditor
 			throw new Exception($"Failed to find node for {boxFrame}");
 		}
 
-		public bool GetOverlap(ImmutableArray<Box> boxes, Point[] offsets, int box, Rect boxFrame, out int otherBox, out Point overlap, out Node otherNode)
+		Node GetNodeForBox(int box, Rect boxFrame)
 		{
-			otherBox = -1;
-			overlap = Point.Zero;
+			var q = new Queue<Node>();
+			q.Enqueue(rootNode);
+			while (q.Count > 0)
+			{
+				var m = q.Dequeue();
 
-			//var n = NodeForFrame(boxFrame);
+				if (m.Values != null)
+				{
+					for (var i = 0; i < m.Values.Count; i++)
+					{
+						if (m.Values[i] == box) return m;
+					}
+				}
 
+				for (var i = 0; i < 4; i++)
+				{
+					if (m.Children[i] != null && m.ChildFrames[i].Intersects(boxFrame))
+					{
+						q.Enqueue(m.Children[i]);
+					}
+				}
+			}
+
+			throw new Exception($"Cannot find box {box}");
+		}
+
+		public bool GetOverlap(ImmutableArray<Box> boxes, Point[] offsets, int box, Rect boxFrame, out int otherBox, out Point overlap)
+		{
 			var q = new Queue<Node>();
 			q.Enqueue(rootNode);
 			while (q.Count > 0)
@@ -138,10 +170,11 @@ namespace BoxEditor
 						var bmr = b.Frame.GetInflated(maxMargin / 2) + offsets[m.Values[i]];
 						if (amr.Intersects(bmr))
 						{
-							var dx1 = bmr.Right - amr.Left;
+							//if (bmr.Right
+							var dx1 = amr.Left - bmr.Right;
 							var dx2 = amr.Right - bmr.Left;
 							var dx = (Math.Abs(dx1) <= Math.Abs(dx2)) ? dx1 : dx2;
-							var dy1 = bmr.Bottom - amr.Top;
+							var dy1 = amr.Top - bmr.Bottom;
 							var dy2 = amr.Bottom - bmr.Top;
 							var dy = (Math.Abs(dy1) <= Math.Abs(dy2)) ? dy1 : dy2;
 							if (Math.Abs(dx) <= Math.Abs(dy))
@@ -151,12 +184,15 @@ namespace BoxEditor
 							else
 							{
 								dx = 0;
-							};
-							//Debug.WriteLine($"{DateTime.Now} DX = {dx} AMR = {amr}");
-							otherBox = m.Values[i];
-							overlap = new Point(dx, dy);
-							otherNode = m;
-							return true;
+							}
+
+							if (Math.Abs(dx) > 1e-4 || Math.Abs(dy) > 1e-4)
+							{
+								//Debug.WriteLine($"  DX = {dx} DY = {dy} AMR = {amr}");
+								otherBox = m.Values[i];
+								overlap = new Point(dx, dy);
+								return true;
+							}
 						}
 					}
 				}
@@ -172,7 +208,6 @@ namespace BoxEditor
 
 			otherBox = -1;
 			overlap = Point.Zero;
-			otherNode = null;
 			return false;
 		}
 	}
