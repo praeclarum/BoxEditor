@@ -150,6 +150,8 @@ namespace BoxEditor
 		{
 			var q = new Queue<Node>();
 			q.Enqueue(rootNode);
+			var a = boxes[box];
+			var eps = Math.Abs(a.Frame.Size.Min) / 1000.0;
 			while (q.Count > 0)
 			{
 				var m = q.Dequeue();
@@ -160,7 +162,6 @@ namespace BoxEditor
 					{
 						if (m.Values[i] == box) continue;
 
-						var a = boxes[box];
 						var b = boxes[m.Values[i]];
 
 						var maxMargin = new Size(
@@ -186,7 +187,7 @@ namespace BoxEditor
 								dx = 0;
 							}
 
-							if (Math.Abs(dx) > 1e-4 || Math.Abs(dy) > 1e-4)
+							if (Math.Abs(dx) > eps || Math.Abs(dy) > eps)
 							{
 								//Debug.WriteLine($"  DX = {dx} DY = {dy} AMR = {amr}");
 								otherBox = m.Values[i];

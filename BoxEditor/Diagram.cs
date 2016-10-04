@@ -181,7 +181,7 @@ namespace BoxEditor
 			{
 				iter++;
 				iterChanged = false;
-				for (var i = 0; i < n && !iterChanged; i++)
+				for (var i = 0; i < n; i++)
 				{
 					var a = d.Boxes[i];
 					int j;
@@ -218,8 +218,10 @@ namespace BoxEditor
 								iterChanged = true;
 								var oldfi = boxFrames[i] + offsets[i];
 								var oldfj = boxFrames[j] + offsets[j];
-								offsets[i] -= new Point(overlap.X / 2, overlap.Y / 2);
-								offsets[j] += new Point(overlap.X / 2, overlap.Y / 2);
+								var ir = 0.5;
+								var jr = 1.0 - ir;
+								offsets[i] -= new Point(overlap.X * ir, overlap.Y * ir);
+								offsets[j] += new Point(overlap.X * jr, overlap.Y * jr);
 								quadtree.Move(i, oldfi, boxFrames[i] + offsets[i]);
 								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
 							}
