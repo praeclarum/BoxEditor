@@ -50,44 +50,43 @@ namespace BoxEditor
 			CurvedPath = CreateCurvedPath(startDir, endDir);
 		}
 
+		/// <summary>
+		/// Creates the curved path for the segmented path.
+		/// See http://www.ibiblio.org/e-notes/Splines/Cardinal.htm
+		/// </summary>
 		Path CreateCurvedPath(Point startDir, Point endDir)
 		{
+			var alpha = 2.0;
 			var p = new Path();
-			if (Points.Length > 1)
+			var n = Points.Length;
+			if (n > 1)
 			{
-				var pt = Points[0];
-				p.MoveTo(pt);
-				var dir = startDir;
-				if (dir.DistanceSquared < 1e-12)
+				p.MoveTo(Points[0]);
+
+				var pd0 = (Points[1] - Points[0]) / alpha;
+				if (startDir.DistanceSquared > 0.9)
 				{
-					dir = (Points[1] - pt).Normalized;
+					pd0 = pd0.Distance * startDir;
 				}
 
-				for (var i = 1; i < Points.Length; i++)
+				var pdn = (Points[n - 1] - Points[n - 2]) / alpha;
+				if (endDir.DistanceSquared > 0.9)
 				{
-					var pti = Points[i];
+					pdn = -pdn.Distance * endDir;
+				}
 
-					var d = pti - pt;
-					var dist = d.Distance;
-					var cdisti = dist * 0.25;
+				for (var i = 0; i < n - 1; i++)
+				{
+					var pi = Points[i];
+					var pi1 = Points[i + 1];
 
-					var diri = endDir;
-					if (i + 1 < Points.Length)
-					{
-						var d1 = (pt - pti).Normalized;
-						var d2 = (pti - Points[i + 1]).Normalized;
-						diri = (d1 + d2).Normalized;
-					}
-					if (diri.DistanceSquared < 1e-12)
-					{
-						diri = (pt - pti).Normalized;
-					}
+					var pdi = i > 0 ? (pi1 - Points[i - 1]) / alpha : pd0;
+					var pdi1 = i + 2 < n ? (Points[i + 2] - pi) / alpha : pdn;
 
-					var c1 = pt + dir * cdisti;
-					var c2 = pti + diri * cdisti;
-					p.CurveTo(c1, c2, Points[i]);
-					pt = pti;
-					dir = -diri;
+					var b1 = pdi / 3.0 + pi;
+					var b2 = -pdi1 / 3.0 + pi1;
+
+					p.CurveTo(b1, b2, pi1);
 				}
 			}
 			return p;
