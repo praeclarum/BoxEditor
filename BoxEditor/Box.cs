@@ -97,7 +97,7 @@ namespace BoxEditor
 		/// can be while still considered a hit.</param>
 		public Tuple<int, double> HitTestHandles(Point point, Size handleSize, double maxDistance)
 		{
-			Debug.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
+			//Debug.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
 
 			var nohit = Frame.GetInflated(-handleSize / 2);
 			if (nohit.Contains(point))
