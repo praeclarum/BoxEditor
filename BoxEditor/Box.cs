@@ -13,7 +13,7 @@ namespace BoxEditor
 	/// </summary>
 	public class Box : ISelectable
     {
-		public readonly string id;
+		readonly string id;
 		public string Id => id;
 		public readonly object Value;
         public readonly Rect Frame;

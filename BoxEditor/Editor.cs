@@ -17,6 +17,8 @@ namespace BoxEditor
 
 		public event EventHandler<BoxesChangedEventArgs> BoxesChanged;
 		public event EventHandler SelectionChanged;
+		public event EventHandler<BoxEventArgs> ShowBoxEditor;
+		public event EventHandler<ArrowEventArgs> ShowArrowEditor;
 
         public Diagram Diagram
         {
@@ -128,7 +130,8 @@ namespace BoxEditor
 
 		TouchGesture touchGesture = TouchGesture.None;
 		Point dragBoxLastDiagramLoc = Point.Zero;
-		bool dragBoxStartSelected = false;
+		Box dragBoxStartSelected = null;
+		Arrow dragArrowStartSelected = null;
 		int dragBoxHandle = 0;
 		Diagram dragDiagram = Diagram.Empty;
 		ImmutableArray<Box> dragBoxes = ImmutableArray<Box>.Empty;
@@ -175,12 +178,13 @@ namespace BoxEditor
 				}
 				else if (boxHit != null)
 				{
-					dragBoxStartSelected = IsSelected(boxHit);
-					if (!dragBoxStartSelected)
+					dragBoxStartSelected = IsSelected(boxHit) ? boxHit : null;
+					if (dragBoxStartSelected == null)
 					{
 						if (touch.IsShiftDown)
 						{
-							if (!selection.Contains(boxHit)) {
+							if (!selection.Contains(boxHit))
+							{
 								Select(selection.Add(boxHit));
 							}
 						}
@@ -199,6 +203,7 @@ namespace BoxEditor
 				}
 				else if (arrowHit != null)
 				{
+					dragArrowStartSelected = IsSelected(arrowHit) ? arrowHit : null;
 					if (touch.IsShiftDown)
 					{
 						if (!selection.Contains(arrowHit))
@@ -294,12 +299,26 @@ namespace BoxEditor
 				});
 				changedBoxes = ImmutableDictionary<object, Box>.Empty;
 			}
+			else {
+				if (dragBoxStartSelected != null)
+				{
+					//Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
+					ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected));
+				}
+				else if (dragArrowStartSelected != null)
+				{
+					//Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
+					ShowArrowEditor?.Invoke(this, new ArrowEventArgs(dragArrowStartSelected));
+				}
+			}
 
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
 			dragLastBoxes = ImmutableArray<Box>.Empty;
 			dragDiagram = Diagram.Empty;
 			dragGuides = ImmutableArray<DragGuide>.Empty;
+			dragBoxStartSelected = null;
+			dragArrowStartSelected = null;
 			activeTouches.Remove(touch.TouchId);
 			Redraw?.Invoke();
 		}
@@ -747,6 +766,24 @@ namespace BoxEditor
 	public class BoxesChangedEventArgs : EventArgs
 	{
 		public ImmutableArray<Box> Boxes { get; set; }
+	}
+
+	public class BoxEventArgs : EventArgs
+	{
+		public Box Box { get; set; }
+		public BoxEventArgs(Box box)
+		{
+			Box = box;
+		}
+	}
+
+	public class ArrowEventArgs : EventArgs
+	{
+		public Arrow Arrow { get; set; }
+		public ArrowEventArgs(Arrow arrow)
+		{
+			Arrow = arrow;
+		}
 	}
 
 	public interface ISelectable
