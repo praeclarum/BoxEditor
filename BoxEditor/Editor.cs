@@ -303,12 +303,14 @@ namespace BoxEditor
 				if (dragBoxStartSelected != null)
 				{
 					//Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
-					ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected));
+					var r = new Rect(touch.Location, new Size(1, 1));
+					ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected, r));
 				}
 				else if (dragArrowStartSelected != null)
 				{
 					//Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
-					ShowArrowEditor?.Invoke(this, new ArrowEventArgs(dragArrowStartSelected));
+					var r = new Rect(touch.Location, new Size(1, 1));
+					ShowArrowEditor?.Invoke(this, new ArrowEventArgs(dragArrowStartSelected, r));
 				}
 			}
 
@@ -771,18 +773,22 @@ namespace BoxEditor
 	public class BoxEventArgs : EventArgs
 	{
 		public Box Box { get; set; }
-		public BoxEventArgs(Box box)
+		public Rect Rect { get; set; }
+		public BoxEventArgs(Box box, Rect rect)
 		{
 			Box = box;
+			Rect = rect;
 		}
 	}
 
 	public class ArrowEventArgs : EventArgs
 	{
 		public Arrow Arrow { get; set; }
-		public ArrowEventArgs(Arrow arrow)
+		public Rect Rect { get; set; }
+		public ArrowEventArgs(Arrow arrow, Rect rect)
 		{
 			Arrow = arrow;
+			Rect = rect;
 		}
 	}
 
