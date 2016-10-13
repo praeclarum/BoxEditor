@@ -159,7 +159,7 @@ namespace BoxEditor
 				var handleHit =
 					(from b in diagram.Boxes
 					 where IsSelected(b)
-					 let h = b.HitTestHandles(diagramLoc, new Size(handleSize), 22 * viewToDiagram.A)
+					 let h = b.HitTestHandles(diagramLoc, new Size(handleSize), diagram.Style.DragHandleDistance * viewToDiagram.A)
 					 where h != null
 					 orderby h.Item2
 					 select Tuple.Create(b, h.Item1)).FirstOrDefault();

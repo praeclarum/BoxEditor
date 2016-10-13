@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -92,13 +93,11 @@ namespace BoxEditor
 		/// the index of the hit handle and the distance to it.</returns>
 		/// <param name="point">The point to test.</param>
 		/// <param name="handleSize">The size of a handle.</param>
-		/// <param name="tolerance">The farthest out from a handle the point
+		/// <param name="maxDistance">The farthest out from a handle the point
 		/// can be while still considered a hit.</param>
-		public Tuple<int, double> HitTestHandles(Point point, Size handleSize, double tolerance)
+		public Tuple<int, double> HitTestHandles(Point point, Size handleSize, double maxDistance)
 		{
-			//			Console.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
-
-			var maxDistance = handleSize.Diagonal / 2 + tolerance;
+			Debug.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
 
 			var nohit = Frame.GetInflated(-handleSize / 2);
 			if (nohit.Contains(point))
