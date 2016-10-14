@@ -176,7 +176,7 @@ namespace BoxEditor
 			}
 
 			var debugs = new List<IDrawable>();
-#if true
+#if false
 			var npen = new Pen(Colors.Green, 1);
 			foreach (var v in graph.Vertices)
 			{
