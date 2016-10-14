@@ -653,7 +653,7 @@ namespace BoxEditor
             foreach (var a in diagram.Arrows)
             {
 				var p = diagram.GetArrowPath(a);
-				p.Pen = new Pen(a.Style.LineColor, a.Style.LineWidth);
+				p.Pen = new Pen(a.Style.LineColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
 				p.Draw(canvas);
 				ArrowDrawn?.Invoke(a, canvas);
             }
@@ -687,7 +687,7 @@ namespace BoxEditor
 					if (a != null)
 					{
 						var path = diagram.GetArrowPath(a);
-						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.LineWidth);
+						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
 						path.Draw(canvas);
 					}
 				}

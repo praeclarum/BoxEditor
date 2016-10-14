@@ -38,13 +38,15 @@ namespace BoxEditor
 	{
 		public readonly Color LineColor;
 		public readonly double LineWidth;
+		public readonly bool ViewDependent;
 
-		public static readonly ArrowStyle Default = new ArrowStyle(Colors.Black, 4);
+		public static readonly ArrowStyle Default = new ArrowStyle(Colors.Black, 4, false);
 
-		public ArrowStyle(Color lineColor, double lineWidth)
+		public ArrowStyle(Color lineColor, double lineWidth, bool viewDependent)
 		{
 			LineColor = lineColor;
 			LineWidth = lineWidth;
+			ViewDependent = viewDependent;
 		}
 	}
 }

@@ -20,8 +20,12 @@ namespace BoxEditor
         public readonly Rect Frame;
 		public readonly BoxStyle Style;
         public readonly ImmutableArray<Port> Ports;
+		/// <summary>
+		/// Used when routing to prevent overlapping boxes.
+		/// </summary>
+		public readonly Rect PreventOverlapFrame;
 
-		public Box(string id, object value, Rect frame, BoxStyle style, ImmutableArray<Port> ports)
+		public Box(string id, object value, Rect frame, Rect preventOverlapFrame, BoxStyle style, ImmutableArray<Port> ports)
         {
 			if (string.IsNullOrEmpty(id))
 			{
@@ -32,32 +36,15 @@ namespace BoxEditor
             Frame = frame;
 			Style = style;
             Ports = ports;
+			PreventOverlapFrame = preventOverlapFrame;
         }
 
 		public Box(string id, object value, Rect frame, BoxStyle style)
-			: this (id, value, frame, style, ImmutableArray<Port>.Empty)
+			: this (id, value, frame, frame, style, ImmutableArray<Port>.Empty)
 		{
 		}
 
 		public Rect FrameWithMargin => Frame.GetInflated(Style.Margin);
-
-		/// <summary>
-		/// Bounding box built from the ports. This is used
-		/// when routing to prevent overlapping boxes.
-		/// </summary>
-		/// <value>The bounding box of all the ports.</value>
-		public Rect PortBoundingBox
-		{
-			get
-			{
-				var bb = new BoundingBoxBuilder();
-				foreach (var p in Ports)
-				{
-					bb.Add(p.GetPoint(this));
-				}
-				return bb.BoundingBox;
-			}
-		}
 
 		/// <summary>
 		/// The list of resize handles to display when selected.
@@ -119,9 +106,9 @@ namespace BoxEditor
 		/// </summary>
 		/// <returns>The new box.</returns>
 		/// <param name="newFrame">The new frame.</param>
-		public Box WithFrame(Rect newFrame)
+		public Box WithFrame(Rect newFrame, Rect newPreventOverlapFrame)
 		{
-			return new Box (Id, Value, newFrame, Style, Ports);
+			return new Box (Id, Value, newFrame, newPreventOverlapFrame, Style, Ports);
 		}
 
 		/// <summary>
@@ -131,7 +118,8 @@ namespace BoxEditor
 		public Box Move(Point d)
 		{
 			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
-			return new Box(Id, Value, newFrame, Style, Ports);
+			var newPreventOverlapFrame = new Rect(PreventOverlapFrame.TopLeft + d, PreventOverlapFrame.Size);
+			return new Box(Id, Value, newFrame, newPreventOverlapFrame, Style, Ports);
 		}
 
 		/// <summary>
@@ -198,7 +186,8 @@ namespace BoxEditor
 				ds.Y = nds;
 			}
 			var newFrame = new Rect(Frame.TopLeft + dl, Frame.Size + ds);
-			return WithFrame(newFrame);
+			var newPreventOverlapFrame = new Rect(PreventOverlapFrame.TopLeft + dl, PreventOverlapFrame.Size + ds);
+			return WithFrame(newFrame, newPreventOverlapFrame);
 		}
 
 		/// <summary>
@@ -281,7 +270,7 @@ namespace BoxEditor
 			{
 				throw new InvalidOperationException("Id must be set");
 			}
-			return new Box(Id, Value, Frame, Style, Ports.ToImmutableArray());
+			return new Box(Id, Value, Frame, Frame, Style, Ports.ToImmutableArray());
         }
     }
 

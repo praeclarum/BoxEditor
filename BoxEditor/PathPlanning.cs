@@ -126,12 +126,15 @@ namespace BoxEditor
 
 			foreach (var b in boxes)
 			{
-				var bb = b.PortBoundingBox;
-				var mb = bb.GetInflated(b.Style.Margin);
-				graph.AddVertex(mb.TopLeft);
-				graph.AddVertex(mb.TopRight);
-				graph.AddVertex(mb.BottomLeft);
-				graph.AddVertex(mb.BottomRight);
+				var bb = b.PreventOverlapFrame;
+				if (bb.Width > 1e-7 && bb.Height > 1e-7)
+				{
+					var mb = bb.GetInflated(b.Style.Margin);
+					graph.AddVertex(mb.TopLeft);
+					graph.AddVertex(mb.TopRight);
+					graph.AddVertex(mb.BottomLeft);
+					graph.AddVertex(mb.BottomRight);
+				}
 			}
 
 			var astarOpenQueue = new FastPriorityQueue<Vertex>(graph.Vertices.Count + 2);
@@ -145,11 +148,11 @@ namespace BoxEditor
 				// Ignore the box if the port is actually
 				// inside the bounding box
 				//
-				var sbb = a.StartBox.PortBoundingBox;
+				var sbb = a.StartBox.PreventOverlapFrame;
 				sbb.Inflate(-sbb.Size * 0.005);
 				var sIgBox = sbb.Contains(sp) ? boxes.IndexOf(a.StartBox) : -1;
 
-				var ebb = a.EndBox.PortBoundingBox;
+				var ebb = a.EndBox.PreventOverlapFrame;
 				ebb.Inflate(-ebb.Size * 0.005);
 				var eIgBox = ebb.Contains(ep) ? boxes.IndexOf(a.EndBox) : -1;
 
@@ -173,7 +176,7 @@ namespace BoxEditor
 			}
 
 			var debugs = new List<IDrawable>();
-#if false
+#if true
 			var npen = new Pen(Colors.Green, 1);
 			foreach (var v in graph.Vertices)
 			{
@@ -418,7 +421,7 @@ namespace BoxEditor
 				for (int i = 0; i < boxes.Length; i++)
 				{
 					var b = boxes[i];
-					var bb = b.PortBoundingBox;
+					var bb = b.PreventOverlapFrame;
 					bb.Inflate(-bb.Size * 0.005);
 					bounds[i * 2] = bb.TopLeft;
 					bounds[i * 2 + 1] = bb.BottomRight;
