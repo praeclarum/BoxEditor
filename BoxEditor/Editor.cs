@@ -358,12 +358,14 @@ namespace BoxEditor
 				newHover = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault();
 			}
 
+			newHover = selection.Contains(newHover) ? null : newHover;
+
 			if (newHover != hoverSelection)
 			{
 				//Debug.WriteLine($"CHOVER {newHover} <--- {hoverSelection}");
-				hoverSelection =
-					selection.Contains(newHover) ? null : newHover;
+				hoverSelection = newHover;
 				Redraw?.Invoke();
+				SelectionChanged?.Invoke(this, EventArgs.Empty);
 			}
 		}
 
