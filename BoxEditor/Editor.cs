@@ -466,7 +466,7 @@ namespace BoxEditor
 				selection = newSels;
 
 				hoverSelection = newHover;
-				Debug.WriteLine("SCH SetSelection HOVER === " + newHover);
+				//Debug.WriteLine("SCH SetSelection HOVER === " + newHover);
 
 				Redraw?.Invoke();
 				if (userInitiated)
