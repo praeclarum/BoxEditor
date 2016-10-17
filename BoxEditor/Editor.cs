@@ -429,7 +429,7 @@ namespace BoxEditor
 			return selection.Contains(s);
 		}
 
-		public void Select(IEnumerable<string> ids)
+		public void Select(IEnumerable<string> ids, string hoverId)
 		{
 			var allobjs =
 				diagram.Boxes.OfType<ISelectable>()
@@ -447,24 +447,32 @@ namespace BoxEditor
 				}
 			}
 
-			Select(sels); 
+			ISelectable hover;
+			allobjs.TryGetValue(hoverId, out hover);
+
+			SetSelection(sels.ToImmutableArray(), hover, false); 
 		}
 
-		public void Select(IEnumerable<ISelectable> selects)
+		void Select(IEnumerable<ISelectable> selects)
 		{
 			var newSels = selects.ToImmutableArray();
+			SetSelection(newSels, newSels.Contains(hoverSelection) ? null : hoverSelection, true);
+		}
 
-			if (!newSels.SequenceEqual(selection))
+		void SetSelection(ImmutableArray<ISelectable> newSels, ISelectable newHover, bool userInitiated)
+		{
+			if (newHover != hoverSelection || !newSels.SequenceEqual(selection))
 			{
 				selection = newSels;
 
-				if (selection.Contains(hoverSelection))
-				{
-					hoverSelection = null;
-				}
+				hoverSelection = newHover;
+				Debug.WriteLine("SCH SetSelection HOVER === " + newHover);
 
 				Redraw?.Invoke();
-				SelectionChanged?.Invoke(this, EventArgs.Empty);
+				if (userInitiated)
+				{
+					SelectionChanged?.Invoke(this, EventArgs.Empty);
+				}
 			}
 		}
 
@@ -476,6 +484,11 @@ namespace BoxEditor
 		public IReadOnlyList<ISelectable> Selection
 		{
 			get { return selection; }
+		}
+
+		public ISelectable HoverSelection
+		{
+			get { return hoverSelection; }
 		}
 
 		public void SelectNone()
