@@ -146,7 +146,7 @@ namespace BoxEditor
 			throw new Exception($"Cannot find box {box}");
 		}
 
-		public bool GetOverlap(ImmutableArray<Box> boxes, Point[] offsets, int box, Rect boxFrame, out int otherBox, out Point overlap)
+		public bool GetOverlap(IList<Box> boxes, Point[] offsets, int box, Rect boxFrame, out int otherBox, out Point overlap)
 		{
 			var q = new Queue<Node>();
 			q.Enqueue(rootNode);

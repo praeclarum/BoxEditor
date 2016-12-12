@@ -1,50 +1,101 @@
-﻿using NGraphics;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
+
+using NGraphics;
 
 namespace BoxEditor
 {
 	/// <summary>
-	/// Immutable object representing a "box" that is a collection of "ports".
-	/// Boxes also have a frame, a value, and a style.
+	/// Object representing a "box" that is a collection of "ports".
+	/// Boxes have a frame that places them on the diagram.
 	/// </summary>
 	public class Box : ISelectable
     {
-		readonly string id;
-		public string Id => id;
-		public readonly object Value;
-        public readonly Rect Frame;
-		public readonly BoxStyle Style;
-        public readonly ImmutableArray<Port> Ports;
+		Rect frame;
+		IList<Port> ports;
+
+		Size margin;
+		Size minSize;
+
+		public Rect Frame
+		{
+			get
+			{
+				return frame;
+			}
+			set
+			{
+				if (frame != value)
+				{
+					frame = value;
+				}
+			}
+		}
+
 		/// <summary>
 		/// Used when routing to prevent overlapping boxes.
 		/// </summary>
-		public readonly Rect PreventOverlapFrame;
+		public virtual Rect PreventOverlapFrame => frame;
 
-		public Box(string id, object value, Rect frame, Rect preventOverlapFrame, BoxStyle style, ImmutableArray<Port> ports)
-        {
-			if (string.IsNullOrEmpty(id))
+		public IList<Port> Ports
+		{
+			get
 			{
-				throw new ArgumentException("Id must be set");
+				return ports;
 			}
-			this.id = id;
-			Value = value;
-            Frame = frame;
-			Style = style;
-            Ports = ports;
-			PreventOverlapFrame = preventOverlapFrame;
+			set
+			{
+				//UnbindPorts ();
+				ports = value;
+				//BindPorts ();
+			}
+		}
+
+		public Size Margin
+		{
+			get
+			{
+				return margin;
+			}
+			set
+			{
+				if (margin != value)
+				{
+					margin = value;
+				}
+			}
+		}
+
+		public Size MinSize
+		{
+			get
+			{
+				return minSize;
+			}
+			set
+			{
+				if (minSize != value)
+				{
+					minSize = value;
+				}
+			}
+		}
+
+		public Box(Rect frame)
+        {
+			this.frame = frame;
+			this.ports = new ObservableCollection<Port> ();
         }
 
-		public Box(string id, object value, Rect frame, BoxStyle style)
-			: this (id, value, frame, frame, style, ImmutableArray<Port>.Empty)
+		public Box ()
+			: this (new Rect())
 		{
 		}
 
-		public Rect FrameWithMargin => Frame.GetInflated(Style.Margin);
+		public Rect FrameWithMargin => Frame.GetInflated(Margin);
 
 		/// <summary>
 		/// The list of resize handles to display when selected.
@@ -102,24 +153,13 @@ namespace BoxEditor
 		}
 
 		/// <summary>
-		/// Get a new box with a new Frame.
-		/// </summary>
-		/// <returns>The new box.</returns>
-		/// <param name="newFrame">The new frame.</param>
-		public Box WithFrame(Rect newFrame, Rect newPreventOverlapFrame)
-		{
-			return new Box (Id, Value, newFrame, newPreventOverlapFrame, Style, Ports);
-		}
-
-		/// <summary>
 		/// Get a new box moved by a distance d.
 		/// </summary>
 		/// <param name="d">The distance to move the box.</param>
-		public Box Move(Point d)
+		public void Move(Point d)
 		{
 			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
-			var newPreventOverlapFrame = new Rect(PreventOverlapFrame.TopLeft + d, PreventOverlapFrame.Size);
-			return new Box(Id, Value, newFrame, newPreventOverlapFrame, Style, Ports);
+			this.frame = newFrame;
 		}
 
 		/// <summary>
@@ -128,13 +168,13 @@ namespace BoxEditor
 		/// <returns>The new box.</returns>
 		/// <param name="index">The index of the handle to move.</param>
 		/// <param name="d">The distance to move the handle.</param>
-		public Box MoveHandle(int index, Point d)
+		public void MoveHandle(int index, Point d)
 		{
 			var dx = new Point(d.X, 0);
 			var dy = new Point(0, d.Y);
 
-			var minw = Style.MinSize.Width;
-			var minh = Style.MinSize.Height;
+			var minw = minSize.Width;
+			var minh = minSize.Height;
 
 			var dl = Point.Zero;
 			var ds = Point.Zero;
@@ -186,8 +226,7 @@ namespace BoxEditor
 				ds.Y = nds;
 			}
 			var newFrame = new Rect(Frame.TopLeft + dl, Frame.Size + ds);
-			var newPreventOverlapFrame = new Rect(PreventOverlapFrame.TopLeft + dl, PreventOverlapFrame.Size + ds);
-			return WithFrame(newFrame, newPreventOverlapFrame);
+			this.frame = newFrame;
 		}
 
 		/// <summary>
@@ -200,8 +239,8 @@ namespace BoxEditor
 		{
 			yield return DragGuide.Vertical(Frame.Center.X + offset.X, DragGuideSource.CenterV, boxIndex);
 			yield return DragGuide.Horizontal(Frame.Center.Y + offset.Y, DragGuideSource.CenterH, boxIndex);
-			var mx = Style.Margin.Width;
-			var my = Style.Margin.Height;
+			var mx = margin.Width;
+			var my = margin.Height;
 			if (mx > 0)
 			{
 				yield return DragGuide.Vertical(Frame.Left + offset.X - mx, DragGuideSource.LeftMargin, boxIndex);
@@ -216,7 +255,7 @@ namespace BoxEditor
 			yield return DragGuide.Vertical(Frame.Right + offset.X, DragGuideSource.RightEdge, boxIndex);
 			yield return DragGuide.Horizontal(Frame.Top + offset.Y, DragGuideSource.TopEdge, boxIndex);
 			yield return DragGuide.Horizontal(Frame.Bottom + offset.Y, DragGuideSource.BottomEdge, boxIndex);
-			for (int i = 0; i < Ports.Length; i++)
+			for (int i = 0; i < Ports.Count; i++)
 			{
 				var p = Ports[i];
 				var f = p.GetFrame(this);
@@ -224,77 +263,6 @@ namespace BoxEditor
 				yield return DragGuide.Vertical(c.X, DragGuideSource.PortVS + i, boxIndex);
 				yield return DragGuide.Horizontal(c.Y, DragGuideSource.PortHS + i, boxIndex);
 			}
-		}
-	}
-
-	/// <summary>
-	/// Mutable object to help construct immutable Boxes.
-	/// </summary>
-	public class BoxBuilder
-    {
-		public string Id;
-        public object Value;
-		public Rect Frame;
-        public List<Port> Ports = new List<Port>();
-		public BoxStyle Style = BoxStyle.Default;
-
-		/// <summary>
-		/// Add a port given its frame.
-		/// </summary>
-		/// <param name="value">The value to associate with the port.</param>
-		/// <param name="relativeFrame">The frame of the port relative to the box's frame.</param>
-		/// <param name="direction">Direction arrows should leave this port.</param>
-		public void AddPort(object value, Rect relativeFrame, Point direction)
-        {
-			Ports.Add(new Port(value, relativeFrame, direction));
-        }
-
-		/// <summary>
-		/// Add a port given its location.
-		/// </summary>
-		/// <param name="value">The value to associate with the port.</param>
-		/// <param name="relativePoint">The location of the port relative to the box's frame.</param>
-		/// <param name="direction">Direction arrows should leave this port.</param>
-		public void AddPort(object value, Point relativePoint, Point direction)
-		{
-			Ports.Add(new Port(value, new Rect(relativePoint, Size.Zero), direction));
-		}
-
-		/// <summary>
-		/// Get the immutable box as a snapshot of this builder.
-		/// </summary>
-		/// <returns>The box.</returns>
-        public Box ToBox()
-        {
-			if (string.IsNullOrEmpty(Id))
-			{
-				throw new InvalidOperationException("Id must be set");
-			}
-			return new Box(Id, Value, Frame, Frame, Style, Ports.ToImmutableArray());
-        }
-    }
-
-	/// <summary>
-	/// Immutable styling information for boxes.
-	/// </summary>
-	public class BoxStyle
-	{
-		public readonly Color BackgroundColor;
-		public readonly Color BorderColor;
-		public readonly double BorderWidth;
-		public readonly Size Margin;
-		public readonly Size MinSize;
-
-		public static readonly BoxStyle Default =
-			new BoxStyle(Colors.White, Colors.Black, 1, new Size(11, 22), new Size(44, 44));
-
-		public BoxStyle(Color backgroundColor, Color borderColor, double borderWidth, Size margin, Size minSize)
-		{
-			BackgroundColor = backgroundColor;
-			BorderColor = borderColor;
-			BorderWidth = borderWidth;
-			Margin = margin;
-			MinSize = minSize;
 		}
 	}
 }

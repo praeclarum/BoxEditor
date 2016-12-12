@@ -10,8 +10,8 @@ namespace BoxEditor
 {
     public class Diagram
     {
-        public readonly ImmutableArray<Box> Boxes;
-        public readonly ImmutableArray<Arrow> Arrows;
+        public readonly IList<Box> Boxes;
+        public readonly IList<Arrow> Arrows;
 		public readonly DiagramStyle Style;
 		public readonly DiagramPaths Paths;
 
@@ -26,53 +26,30 @@ namespace BoxEditor
 			Paths = PathPlanning.Plan(boxes, arrows);
         }
 
-		public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
+		public void UpdateBoxFrames(IEnumerable<Tuple<Box, Rect>> boxes)
 		{
-			return new Diagram(newBoxes, Arrows, Style);
-		}
-
-		public Diagram WithArrows(ImmutableArray<Arrow> newArrows)
-		{
-			return new Diagram(Boxes, newArrows, Style);
-		}
-
-		public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
-		{
-			var newBoxes = Boxes;
-			var newArrows = Arrows;
 			foreach (var e in boxes)
 			{
 				var b = e.Item1;
-				var newb = e.Item2;
-				newBoxes = newBoxes.Replace(b, newb);
-
-				var q = from a in newArrows
-						where a.StartBox == b || a.EndBox == b
-						let na = a.UpdateBox(b, newb)
-						select Tuple.Create(a, na);
-
-				foreach (var aa in q)
-				{
-					newArrows = newArrows.Replace(aa.Item1, aa.Item2);
-				}
+				var newf = e.Item2;
+				b.Frame = newf;
 			}
-			return new Diagram(newBoxes, newArrows, Style);
 		}
 
-		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
+		public List<DragGuide> MoveBoxes(ICollection<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
 		{
-			if (boxes.Length == 0)
-				return Tuple.Create(this, ImmutableArray<DragGuide>.Empty, boxes);
+			if (boxes.Count == 0)
+				return new List<DragGuide>();
 			
 			var d = this;
 
-			var b0 = boxes[0];
+			var b0 = boxes.First();
 			var b0c = b0.Frame.Center + offset;
 
 			var moveGuides =
 				boxes.SelectMany(b => b.GetDragGuides(offset, Boxes.IndexOf(b)))
 				     .ToImmutableArray();
-			;
+			
 			var staticGuides =
 				Boxes.Select((x, i) => Tuple.Create(x, i))
 				     .Where(x => !boxes.Contains(x.Item1))
@@ -118,12 +95,10 @@ namespace BoxEditor
 			}
 
 			var newBs = boxes
-				.Select(b => Tuple.Create(b, b.Move(offset + snapOffset)))
-				.ToImmutableArray();
-			d = d.UpdateBoxes(newBs);
-			var newBsI = newBs.Select(x => x.Item2).ToImmutableArray();
+				.Select(b => Tuple.Create(b, b.Frame + (offset + snapOffset)))
+				.ToList();
 
-			d = d.PreventOverlaps(newBsI, offset, maxTime);
+			PreventOverlaps(newBs, offset, maxTime);
 
 			var guides = new List<DragGuide>();
 			if (snapToGuides)
@@ -148,31 +123,29 @@ namespace BoxEditor
 				}
 			}
 
-			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);
+			return guides;
 		}
 
-		public Diagram PreventOverlaps(ImmutableArray<Box> staticBoxes, Point staticOffset, TimeSpan maxTime)
+		void PreventOverlaps(List<Tuple<Box, Rect>> staticBoxes, Point staticOffset, TimeSpan maxTime)
 		{
-			var d = this;
-			var n = d.Boxes.Length;
-
+			var n = Boxes.Count;
 
 			var iterChanged = true;
 			var sw = new Stopwatch();
 			sw.Start();
 			var maxMillis = (long)maxTime.TotalMilliseconds;
 
-			var offsets = d.Boxes.Select(x => Point.Zero).ToArray();
-			var boxFrames = d.Boxes.Select(x => x.FrameWithMargin).ToArray();
+			var offsets = Boxes.Select(x => Point.Zero).ToArray();
+			var boxFrames = Boxes.Select(x => x.FrameWithMargin).ToArray();
 
 			var staticBoxSet = staticBoxes
-				.Select(x => d.Boxes.IndexOf(x))
+				.Select(x => Boxes.IndexOf(x.Item1))
 				.ToImmutableHashSet();
 
 			var quadtree = new Quadtree(1 << 16, 1 << 16, 16);
 			for (var i = 0; i < n; i++)
 			{
-				var b = d.Boxes[i];
+				var b = Boxes[i];
 				quadtree.Add(i, b.Frame);
 			}
 
@@ -183,13 +156,13 @@ namespace BoxEditor
 				iterChanged = false;
 				for (var i = 0; i < n; i++)
 				{
-					var a = d.Boxes[i];
+					var a = Boxes[i];
 					int j;
 					Point overlap;
 
-					if (quadtree.GetOverlap(d.Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
+					if (quadtree.GetOverlap(Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
 					{
-						var b = d.Boxes[j];
+						var b = Boxes[j];
 
 						if (staticBoxSet.Contains(i))
 						{
@@ -236,54 +209,18 @@ namespace BoxEditor
 
 			//Debug.WriteLine($"ITER={iter}, TIME={sw.Elapsed}");
 
-			var newBs = d
-				.Boxes
+			var newBs =
+				Boxes
 				.Select((b, i) => Tuple.Create(b, i))
 				.Where(bt => Math.Abs(offsets[bt.Item2].X) > 1e-12 || Math.Abs(offsets[bt.Item2].Y) > 1e-12)
-				.Select(bt => Tuple.Create(bt.Item1, bt.Item1.Move(offsets[bt.Item2])))
+				.Select(bt => Tuple.Create(bt.Item1, new Rect(bt.Item1.Frame.Position + offsets[bt.Item2],
+					                                          bt.Item1.Frame.Size)))
 				.ToList();
 
-			d = d.UpdateBoxes(newBs);
-
-			return d;
-		}
-
-		public static Diagram Create(
-			DiagramStyle style,
-			IEnumerable<object> boxValues,
-			Func<object, Box> getBox)
-		{
-			
-			return Create(
-				style,
-				boxValues,
-				Enumerable.Empty<object>(),
-				getBox,
-				(arg1, arg2) => { throw new InvalidOperationException(); });
-		}
-
-		public static Diagram Create(
-			DiagramStyle style,
-            IEnumerable<object> boxValues,
-            IEnumerable<object> arrowValues,
-            Func<object, Box> getBox,
-            Func<Func<object, object, PortRef>, object, Arrow> getArrow)
-        {
-            var boxes = boxValues.Select(getBox).ToImmutableArray();
-
-            var portIndex = new Dictionary<Tuple<object, object>, PortRef>();
-            foreach (var b in boxes)
-            {
-                foreach (var p in b.Ports)
-                {
-                    portIndex[Tuple.Create(b.Value, p.Value)] = new PortRef (b, p);
-                }
-            }
-            Func<object, object, PortRef> portF = (o, n) => portIndex[Tuple.Create(o, n)];
-
-            var arrows = arrowValues.Select (o => getArrow(portF, o)).ToImmutableArray();
-
-            return new Diagram(boxes, arrows, style);
+			foreach (var bt in newBs)				
+			{
+				bt.Item1.Frame = bt.Item2;
+			}
 		}
 
 		public IEnumerable<Box> HitTestBoxes(Point point)

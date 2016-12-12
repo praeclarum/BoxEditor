@@ -257,9 +257,7 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						var minDist = 8.0 * viewToDiagram.A;
-						var mr = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
-						var newd = mr.Item1;
-						dragGuides = mr.Item2;
+						dragGuides = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
 						UpdateDiagram(newd);
 						foreach (var b in dragLastBoxes.Zip(mr.Item3, (x, y) => Tuple.Create(x, y)))
 						{
@@ -809,7 +807,5 @@ namespace BoxEditor
 
 	public interface ISelectable
 	{
-		string Id { get; }
 	}
-
 }
