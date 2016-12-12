@@ -264,5 +264,10 @@ namespace BoxEditor
 				yield return DragGuide.Horizontal(c.Y, DragGuideSource.PortHS + i, boxIndex);
 			}
 		}
+
+		public virtual void Draw (ICanvas canvas)
+		{
+			canvas.DrawRectangle (frame, pen: new Pen (Colors.Black, 1), brush: new SolidBrush (Colors.White));
+		}
 	}
 }

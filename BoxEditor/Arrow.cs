@@ -32,6 +32,11 @@ namespace BoxEditor
 		{
 			return new Arrow(Id, Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
 		}
+
+		public virtual void Draw (Path path, ICanvas canvas)
+		{
+			path.Draw (canvas);
+		}
 	}
 
 	public class ArrowStyle

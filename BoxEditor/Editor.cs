@@ -159,7 +159,7 @@ namespace BoxEditor
 				var handleHit =
 					(from b in diagram.Boxes
 					 where IsSelected(b)
-					 let h = b.HitTestHandles(diagramLoc, new Size(handleSize), diagram.Style.DragHandleDistance * viewToDiagram.A)
+					 let h = b.HitTestHandles(diagramLoc, new Size(handleSize), diagram.DragHandleDistance * viewToDiagram.A)
 					 where h != null
 					 orderby h.Item2
 					 select Tuple.Create(b, h.Item1)).FirstOrDefault();
@@ -612,10 +612,13 @@ namespace BoxEditor
 		#region Drawing
 
 		public event Action Redraw;
-		public event Action<Rect, ICanvas> BackgroundDrawn;
-		public event Action<Box, ICanvas> BoxDrawn;
 		public event Action<Box, Port, ICanvas> PortDrawn;
 		public event Action<Arrow, ICanvas> ArrowDrawn;
+
+		public virtual void DrawBackground (ICanvas canvas, Rect dirtyViewRect)
+		{
+			canvas.FillRectangle (dirtyViewRect, Colors.White);
+		}
 
 		public void Draw(ICanvas canvas, Rect dirtyViewRect)
         {
@@ -624,11 +627,7 @@ namespace BoxEditor
 			//
 			// Draw the background in View-scale
 			//
-			if (diagram.Style.BackgroundColor.A > 0)
-			{
-				canvas.FillRectangle(dirtyViewRect, diagram.Style.BackgroundColor);
-			}
-			BackgroundDrawn?.Invoke(dirtyViewRect, canvas);
+			DrawBackground (canvas, dirtyViewRect);
 
 			//
 			// Transform the view
@@ -649,26 +648,17 @@ namespace BoxEditor
 
             foreach (var b in diagram.Boxes)
             {
-				if (b.Style.BackgroundColor.A > 0)
-				{
-					canvas.FillRectangle(b.Frame, b.Style.BackgroundColor);
-				}
-				if (b.Style.BorderColor.A > 0)
-				{
-					canvas.DrawRectangle(b.Frame, b.Style.BorderColor, b.Style.BorderWidth);
-				}
-				BoxDrawn?.Invoke(b, canvas);
+				b.Draw (canvas);
                 foreach (var p in b.Ports)
                 {
-					PortDrawn?.Invoke(b, p, canvas);
+					p.Draw (b, canvas);
                 }
             }
             foreach (var a in diagram.Arrows)
             {
 				var p = diagram.GetArrowPath(a);
 				p.Pen = new Pen(a.Style.LineColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
-				p.Draw(canvas);
-				ArrowDrawn?.Invoke(a, canvas);
+				a.Draw (p, canvas);
             }
 			foreach (var b in diagram.Boxes)
 			{

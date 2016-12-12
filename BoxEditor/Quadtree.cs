@@ -165,8 +165,8 @@ namespace BoxEditor
 						var b = boxes[m.Values[i]];
 
 						var maxMargin = new Size(
-							Math.Max(a.Style.Margin.Width, b.Style.Margin.Width),
-							Math.Max(a.Style.Margin.Height, b.Style.Margin.Height));
+							Math.Max(a.Margin.Width, b.Margin.Width),
+							Math.Max(a.Margin.Height, b.Margin.Height));
 						var amr = a.Frame.GetInflated(maxMargin / 2) + offsets[box];
 						var bmr = b.Frame.GetInflated(maxMargin / 2) + offsets[m.Values[i]];
 						if (amr.Intersects(bmr))

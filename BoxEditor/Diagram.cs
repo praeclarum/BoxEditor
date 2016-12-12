@@ -14,6 +14,7 @@ namespace BoxEditor
         public readonly IList<Arrow> Arrows;
 		public readonly DiagramStyle Style;
 		public readonly DiagramPaths Paths;
+		public readonly double DragHandleDistance;
 
         public static Diagram Empty =
 			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
@@ -375,40 +376,32 @@ namespace BoxEditor
 		public readonly Color HoverSelectionColor;
 		public readonly Color DragGuideColor;
 
-		public readonly double DragHandleDistance;
+
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
 			Color.FromWhite(236/255.0, 1),
 			Colors.White,
 			Colors.Black,
 			new Color("#45C0FE"),
-			new Color("#FF2600"),
-			22.0);
+			new Color("#FF2600"));
 
 		public DiagramStyle(
 			Color backgroundColor, 
 			Color handleBackgroundColor, 
 			Color handleBorderColor, 
 			Color hoverSelectionColor,
-			Color dragGuideColor,
-			double dragHandleDistance)
+			Color dragGuideColor)
 		{
 			BackgroundColor = backgroundColor;
 			HandleBackgroundColor = handleBackgroundColor;
 			HandleBorderColor = handleBorderColor;
 			HoverSelectionColor = hoverSelectionColor;
 			DragGuideColor = dragGuideColor;
-			DragHandleDistance = dragHandleDistance;
 		}
 
 		public DiagramStyle WithBackgroundColor(Color color)
 		{
-			return new DiagramStyle(color, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, DragHandleDistance);
-		}
-
-		public DiagramStyle WithDragHandleDistance(double distance)
-		{
-			return new DiagramStyle(BackgroundColor, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, distance);
+			return new DiagramStyle(color, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor);
 		}
 	}
 }

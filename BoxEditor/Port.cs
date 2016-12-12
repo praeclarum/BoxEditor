@@ -37,6 +37,10 @@ namespace BoxEditor
 				rf.Height * bf.Height);
 			return pf;
 		}
+
+		public virtual void Draw (Box box, ICanvas canvas)
+		{
+		}
 	}
 
 	public class PortRef
