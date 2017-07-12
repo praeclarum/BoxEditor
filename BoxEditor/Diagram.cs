@@ -12,7 +12,6 @@ namespace BoxEditor
     public class Diagram
     {
 		public readonly DiagramStyle Style;
-		public readonly double DragHandleDistance;
 
         readonly List<Box> boxes = new List<Box>();
         readonly List<Arrow> arrows = new List<Arrow>();
@@ -55,9 +54,22 @@ namespace BoxEditor
 			OnElementsChanged();
 		}
 
-		public void DragBoxHandle(Box box, int handle, Point offset)
+		public void DragBoxHandle(Dictionary<Box, Rect> startFrames, Box box, int handle, Point offset, TimeSpan maxTime)
         {
-        }
+			foreach (var f in startFrames)
+			{
+				f.Key.Frame = f.Value;
+			}
+            box.MoveHandle(handle, offset);
+            var dragOffsets = new List<(Box, Rect)> { (box, box.Frame) };
+            var overlapOffsets = PreventOverlaps(dragOffsets, Point.Zero, maxTime);
+			foreach (var b in overlapOffsets)
+			{
+				b.Item1.Frame = b.Item2;
+			}
+
+			OnBoxFramesChanged(startFrames);
+		}
 
         public List<DragGuide> DragBoxes(Dictionary<Box, Rect> startFrames, List<Box> dragBoxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
 		{
@@ -413,8 +425,6 @@ namespace BoxEditor
 		public readonly Color HandleBorderColor;
 		public readonly Color HoverSelectionColor;
 		public readonly Color DragGuideColor;
-
-
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
 			Color.FromWhite(236/255.0, 1),

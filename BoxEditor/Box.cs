@@ -18,7 +18,7 @@ namespace BoxEditor
 		IList<Port> ports;
 
 		Size margin;
-		Size minSize;
+        Size minSize = new Size (16, 16);
 
 		public Rect Frame
 		{
@@ -142,7 +142,7 @@ namespace BoxEditor
 		{
 			//Debug.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
 
-			var nohit = Frame.GetInflated(-handleSize / 2);
+            var nohit = Frame.GetInflated(-handleSize / 2);
 			if (nohit.Contains(point))
 				return null;
 
@@ -221,6 +221,7 @@ namespace BoxEditor
 				ds.Y = nds;
 			}
 			var newFrame = new Rect(Frame.TopLeft + dl, Frame.Size + ds);
+            //Debug.WriteLine($"MOVE HANDLE from {frame} to {newFrame}");
 			this.frame = newFrame;
 		}
 

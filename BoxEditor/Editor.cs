@@ -11,8 +11,11 @@ namespace BoxEditor
 {
     public class Editor
     {
+        public double DragHandleHitDistance { get; set; } = 22;
+		public double DragHandleSize { get; set; } = 8;
+
 		readonly TimeSpan MaxConstraintSolveTime = TimeSpan.FromSeconds(0.25);
-		                                                   
+
         Diagram diagram = new Diagram ();
 
 		public event EventHandler SelectionChanged;
@@ -119,8 +122,6 @@ namespace BoxEditor
 
 		List<DragGuide> dragGuides = new List<DragGuide> ();
 
-		double handleSize = 8;
-
 		public void TouchBegan (TouchEvent touch)
         {
 			activeTouches[touch.TouchId] = touch.Location;
@@ -137,7 +138,7 @@ namespace BoxEditor
 				var handleHit =
 					(from b in diagram.Boxes
 					 where IsSelected(b)
-					 let h = b.HitTestHandles(diagramLoc, new Size(handleSize), diagram.DragHandleDistance * viewToDiagram.A)
+                     let h = b.HitTestHandles(diagramLoc, new Size(DragHandleSize), DragHandleHitDistance * viewToDiagram.A)
 					 where h != null
 					 orderby h.Item2
 					 select Tuple.Create(b, h.Item1)).FirstOrDefault();
@@ -231,7 +232,7 @@ namespace BoxEditor
 					break;
 				case TouchGesture.DragSelection:
 					{
-						var loc = ViewToDiagram(activeTouches.Values.First());
+                        var loc = ViewToDiagram(touch.Location);
 						var d = loc - dragBoxLastDiagramLoc;
 						var minDist = 8.0 * viewToDiagram.A;
                         dragGuides = diagram.DragBoxes(dragBoxStartFrames, dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
@@ -242,10 +243,10 @@ namespace BoxEditor
 				case TouchGesture.DragBoxHandle:
 					if (dragBoxHandleBox != null)
 					{
-						var loc = ViewToDiagram(activeTouches.Values.First());
+                        var loc = ViewToDiagram(touch.Location);
 						var d = loc - dragBoxLastDiagramLoc;
-						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
-                        diagram.DragBoxHandle(dragBoxHandleBox, dragBoxHandle, d);
+                        //Debug.WriteLine ($"MOVE HANDLE = {loc}, {d}");
+                        diagram.DragBoxHandle(dragBoxStartFrames, dragBoxHandleBox, dragBoxHandle, d, MaxConstraintSolveTime);
 						hoverSelection = null;
                         boxFramesChanged = true;
 						Redraw?.Invoke();
@@ -662,7 +663,7 @@ namespace BoxEditor
 
 		void DrawBoxHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
 		{
-			var s = handleSize * viewToDiagram.A;
+			var s = DragHandleSize * viewToDiagram.A;
 			canvas.DrawRectangle(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
 		}
 
@@ -674,7 +675,7 @@ namespace BoxEditor
 
 		void DrawArrowHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
 		{
-			var s = handleSize * viewToDiagram.A;
+			var s = DragHandleSize * viewToDiagram.A;
 			canvas.DrawEllipse(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
 		}
 
