@@ -12,7 +12,6 @@ namespace BoxEditor
     public class Diagram
     {
 		public readonly DiagramStyle Style;
-		public DiagramPaths Paths;
 		public readonly double DragHandleDistance;
 
         readonly List<Box> boxes = new List<Box>();
@@ -271,27 +270,19 @@ namespace BoxEditor
 
 		void PlanPaths()
 		{
-            Paths = PathPlanning.Plan(boxes.ToImmutableArray (), arrows.ToImmutableArray());
+            PathPlanner.Plan(boxes, arrows);
         }
 
 		public IEnumerable<Arrow> HitTestArrows(Point point, double viewToDiagramScale)
 		{
 			var maxDist = viewToDiagramScale * 22;
 			var q = from a in arrows
-					let p = GetArrowPath (a)
+                    let p = a.Path
 					let d = p.DistanceTo(point)
-	                where d < a.Style.LineWidth / 2 + maxDist
+	                where d < a.Width / 2 + maxDist
 					orderby d ascending
 					select a;
 			return q.ToList();
-		}
-
-		public Path GetArrowPath(Arrow arrow)
-		{
-            var arrowIndex = arrows.IndexOf(arrow);
-            if (arrowIndex < 0 || arrowIndex >= Paths.ArrowPaths.Length)
-                return new Path();
-			return Paths.ArrowPaths[arrowIndex].CurvedPath;
 		}
 
 		public Path GetDirectlyCurvedArrowPath(Arrow arrow)

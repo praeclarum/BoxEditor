@@ -8,53 +8,27 @@ using Priority_Queue;
 
 namespace BoxEditor
 {
-	public static class PathPlanning
+	abstract class PathPlanner
 	{
-		public static DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+		public static List<IDrawable> Plan(List<Box> boxes, List<Arrow> arrows)
 		{
-			if (arrows.Length == 0)
-				return DiagramPaths.Empty;
-			
-			var planner = boxes.Length > 0
-				? (IPathPlanner)new VisibilityPlanner()
+			if (arrows.Count == 0)
+                return new List<IDrawable> ();
+            
+			var planner = boxes.Count > 0
+				? (PathPlanner)new VisibilityPlanner()
 				: new DumbPlanner();
 			
-			return planner.Plan(boxes, arrows);
+			return planner.DoPlan(boxes, arrows);
 		}
-	}
 
-	public class DiagramPaths
-	{
-		public readonly ImmutableArray<PlannedPath> ArrowPaths;
-		public readonly ImmutableArray<IDrawable> DebugDrawings;
-		public static readonly DiagramPaths Empty = new DiagramPaths(
-			ImmutableArray<PlannedPath>.Empty,
-			ImmutableArray<IDrawable>.Empty);
-		public DiagramPaths(ImmutableArray<PlannedPath> arrowPaths, ImmutableArray<IDrawable> debugDrawings)
-		{
-			ArrowPaths = arrowPaths;
-			DebugDrawings = debugDrawings;
-		}
-	}
-
-	public class PlannedPath
-	{
-		public readonly ImmutableArray<Point> Points;
-
-		public readonly Path CurvedPath;
-
-		public PlannedPath(ImmutableArray<Point> points, Point startDir, Point endDir)
-		{
-			Points = points;
-
-			CurvedPath = CreateCurvedPath(startDir, endDir);
-		}
+        protected abstract List<IDrawable> DoPlan(List<Box> boxes, List<Arrow> arrows);
 
 		/// <summary>
 		/// Creates the curved path for the segmented path.
 		/// See http://www.ibiblio.org/e-notes/Splines/Cardinal.htm
 		/// </summary>
-		Path CreateCurvedPath(Point startDir, Point endDir)
+        protected static Path CreateCurvedPath(ImmutableArray<Point> Points, Point startDir, Point endDir)
 		{
 			var alpha = 2.0;
 			var p = new Path();
@@ -93,34 +67,28 @@ namespace BoxEditor
 		}
 	}
 
-	public interface IPathPlanner
+	class DumbPlanner : PathPlanner
 	{
-		DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows);
-	}
-
-	public class DumbPlanner : IPathPlanner
-	{
-		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+		protected override List<IDrawable> DoPlan(List<Box> boxes, List<Arrow> arrows)
 		{
-			var q = arrows
-				.Select(a =>
-				{
-					var points = new[] {
-						a.Start.PortFrame.Center,
-						a.End.PortFrame.Center,
-					};
-					return new PlannedPath (points.ToImmutableArray(), a.Start.Port.Direction, a.End.Port.Direction);
-				});
-			return new DiagramPaths(q.ToImmutableArray(), ImmutableArray<IDrawable>.Empty);
+            foreach (var a in arrows)
+			{
+				var points = new[] {
+					a.Start.PortFrame.Center,
+					a.End.PortFrame.Center,
+				};
+                var path = CreateCurvedPath (points.ToImmutableArray(), a.Start.Port.Direction, a.End.Port.Direction);
+				path.Pen = a.Path.Pen;
+				a.Path = path;
+            };
+            return new List<IDrawable>();
 		}
 	}
 
-	public class VisibilityPlanner : IPathPlanner
+	class VisibilityPlanner : PathPlanner
 	{
-		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+        protected override List<IDrawable> DoPlan(List<Box> boxes, List<Arrow> arrows)
 		{
-			var arrowPaths = new List<PlannedPath>();
-
 			var vmap = new VisibilityMap(boxes);
 			var graph = new Graph(vmap);
 
@@ -132,7 +100,7 @@ namespace BoxEditor
 					var mb = bb.GetInflated(b.Margin);
 					graph.AddVertex(mb.TopLeft);
 					graph.AddVertex(mb.TopRight);
-					graph.AddVertex(mb.BottomLeft);
+                    graph.AddVertex(mb.BottomLeft);
 					graph.AddVertex(mb.BottomRight);
 				}
 			}
@@ -168,12 +136,14 @@ namespace BoxEditor
 				graph.RemoveVertex(endNode);
 
 				var points = nodePath.Select(n => n.Point);
-				var pp = new PlannedPath(
+				var path = CreateCurvedPath(
 					points.ToImmutableArray(),
 					a.Start.Port.Direction,
 					a.End.Port.Direction);
-				arrowPaths.Add(pp);
-			}
+                
+				path.Pen = a.Path.Pen;
+				a.Path = path;
+            }
 
 			var debugs = new List<IDrawable>();
 #if false
@@ -195,7 +165,7 @@ namespace BoxEditor
 			}
 #endif
 
-			return new DiagramPaths(arrowPaths.ToImmutableArray(), debugs.ToImmutableArray());
+            return debugs;
 		}
 
 		/// <summary>
@@ -415,10 +385,10 @@ namespace BoxEditor
 		{
 			readonly Point[] bounds;
 
-			public VisibilityMap(ImmutableArray<Box> boxes)
+			public VisibilityMap(List<Box> boxes)
 			{
-				bounds = new Point[boxes.Length * 2];
-				for (int i = 0; i < boxes.Length; i++)
+				bounds = new Point[boxes.Count * 2];
+                for (int i = 0; i < boxes.Count; i++)
 				{
 					var b = boxes[i];
 					var bb = b.PreventOverlapFrame;

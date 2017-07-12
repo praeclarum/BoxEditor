@@ -589,9 +589,9 @@ namespace BoxEditor
             }
             foreach (var a in diagram.Arrows)
             {
-				var p = diagram.GetArrowPath(a);
-				p.Pen = new Pen(a.Style.LineColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
-				a.Draw (p, canvas);
+                if (hoverSelection == a)
+                    continue;
+                a.Draw (canvas);
             }
 			foreach (var b in diagram.Boxes)
 			{
@@ -610,7 +610,7 @@ namespace BoxEditor
 			}
 			//Debug.WriteLine($"HOVER SEL = {hoverSelection}");
 			if (hoverSelection != null)
-			{
+            {
 				var b = hoverSelection as Box;
 				if (b != null)
 				{
@@ -622,9 +622,11 @@ namespace BoxEditor
 					var a = hoverSelection as Arrow;
 					if (a != null)
 					{
-						var path = diagram.GetArrowPath(a);
-						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
+                        var path = a.Path;
+                        var oldColor = path.Pen.Color;
+                        path.Pen.Color = diagram.Style.HoverSelectionColor;
 						path.Draw(canvas);
+                        path.Pen.Color = oldColor;
 					}
 				}
 			}
@@ -637,16 +639,8 @@ namespace BoxEditor
 				canvas.DrawLine(g.Start, g.End, diagram.Style.DragGuideColor, viewToDiagram.A);
 			}
 
-			//
-			// Debug
-			//
-			foreach (var d in diagram.Paths.DebugDrawings)
-			{
-				d.Draw(canvas);
-			}
-
-			//
-			// Untransform
+            //
+            // Untransform
 			//
 			if (needsTx)
 			{

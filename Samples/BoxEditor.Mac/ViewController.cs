@@ -90,7 +90,9 @@ namespace BoxEditor.Mac
 					{
                         var fp = f(c.Item1.Item1, c.Item1.Item2);
 						var tp = f(c.Item2.Item1, c.Item2.Item2);
-						return new Arrow(c, ArrowStyle.Default, fp, tp);
+						var a = new Arrow(fp, tp, 2.0);
+                        a.Path.Pen.Color = Colors.Gray;
+                        return a;
 					});
 
             var d = new Diagram();
