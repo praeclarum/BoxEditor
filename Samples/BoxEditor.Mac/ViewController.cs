@@ -94,10 +94,8 @@ namespace BoxEditor.Mac
 					});
 
             var d = new Diagram();
-            foreach (var b in boxes.Values)
-                d.Boxes.Add(b);
-            foreach (var a in arrows)
-                d.Arrows.Add(a);
+            d.Add(boxes.Values);
+            d.Add(arrows);
 
 			editorView.Editor.Diagram = d;
 		}

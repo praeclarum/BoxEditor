@@ -33,7 +33,7 @@ namespace BoxEditor
 		public readonly double LineWidth;
 		public readonly bool ViewDependent;
 
-		public static readonly ArrowStyle Default = new ArrowStyle(Colors.Black, 4, false);
+        public static readonly ArrowStyle Default = new ArrowStyle(Colors.Gray, 2, false);
 
 		public ArrowStyle(Color lineColor, double lineWidth, bool viewDependent)
 		{

@@ -33,7 +33,7 @@ namespace BoxEditor
 				diagram = value;
 
 				var newSels = ImmutableArray.CreateBuilder<ISelectable>();
-				foreach (var b in diagram.Boxes)
+                foreach (var b in diagram.Boxes)
 				{
 					if (sels.Contains(b))
 						newSels.Add(b);
@@ -449,7 +449,7 @@ namespace BoxEditor
 		public void SelectAll()
 		{
 			var sels = new List<ISelectable>();
-			sels.AddRange(diagram.Boxes);
+            sels.AddRange(diagram.Boxes);
 			sels.AddRange(diagram.Arrows);
 			Select(sels);
 		}
@@ -523,35 +523,20 @@ namespace BoxEditor
 
 		public void Delete()
 		{
-			var data = diagram;
 			var todelete = selection.ToList();
 
 			SelectNone();
 
 			foreach (var b in todelete.OfType<Box>().ToList())
 			{
-				foreach (var a in data.Arrows)
+				foreach (var a in diagram.Arrows)
 				{
 					if (a.StartBox == b || a.EndBox == b)
 						todelete.Add(a);
 				}
 			}
 
-			foreach (var s in todelete)
-			{
-				var b = s as Box;
-				if (b != null)
-				{
-					data.Boxes.Remove(b);
-					continue;
-				}
-				var a = s as Arrow;
-				if (a != null)
-				{
-					data.Arrows.Remove(a);
-					continue;
-				}
-			}
+            diagram.Remove(todelete);
 
 			//DeletedBox?.Invoke("Delete");
 			Redraw?.Invoke();
@@ -562,8 +547,6 @@ namespace BoxEditor
 		#region Drawing
 
 		public event Action Redraw;
-		public event Action<Box, Port, ICanvas> PortDrawn;
-		public event Action<Arrow, ICanvas> ArrowDrawn;
 
 		public virtual void DrawBackground (ICanvas canvas, Rect dirtyViewRect)
 		{

@@ -158,16 +158,6 @@ namespace BoxEditor
 		}
 
 		/// <summary>
-		/// Get a new box moved by a distance d.
-		/// </summary>
-		/// <param name="d">The distance to move the box.</param>
-		public void Move(Point d)
-		{
-			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
-			this.frame = newFrame;
-		}
-
-		/// <summary>
 		/// Get a new box with a resize handle moved by a distance d.
 		/// </summary>
 		/// <returns>The new box.</returns>
@@ -272,7 +262,7 @@ namespace BoxEditor
 
 		public virtual void Draw (ICanvas canvas)
 		{
-			canvas.DrawRectangle (frame, pen: new Pen (Colors.Black, 1), brush: new SolidBrush (Colors.White));
+			canvas.DrawRectangle (frame, pen: new Pen (Colors.Black, 2), brush: new SolidBrush (Colors.White));
 		}
 	}
 }

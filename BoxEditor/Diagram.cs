@@ -11,42 +11,58 @@ namespace BoxEditor
 {
     public class Diagram
     {
-        public readonly IList<Box> Boxes;
-        public readonly IList<Arrow> Arrows;
 		public readonly DiagramStyle Style;
-		public readonly DiagramPaths Paths;
+		public DiagramPaths Paths;
 		public readonly double DragHandleDistance;
 
-        public Diagram()
+        readonly List<Box> boxes = new List<Box>();
+        readonly List<Arrow> arrows = new List<Arrow>();
+
+		public IEnumerable<Box> Boxes => boxes;
+        public IEnumerable<Arrow> Arrows => arrows;
+
+		public Diagram()
             : this (DiagramStyle.Default)
         {
         }
 
 		public Diagram(DiagramStyle style)
         {
-            Boxes = new ObservableCollection<Box> ();
-            Arrows = new ObservableCollection<Arrow>();
 			Style = style;
-            Paths = PathPlanning.Plan(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty);
+            OnElementsChanged();
         }
 
-		public void UpdateBoxFrames(IEnumerable<Tuple<Box, Rect>> boxes)
+        public void Add(IEnumerable<ISelectable> elements)
+        {
+            foreach (var e in elements)
+            {
+                if (e is Box b)
+                    boxes.Add(b);
+                else if (e is Arrow a)
+                    arrows.Add(a);
+            }
+            OnElementsChanged();
+        }
+
+		public void Remove(IEnumerable<ISelectable> elements)
 		{
-			foreach (var e in boxes)
+			foreach (var e in elements)
 			{
-				var b = e.Item1;
-				var newf = e.Item2;
-				b.Frame = newf;
+				if (e is Box b)
+					boxes.Remove(b);
+                else if (e is Arrow a)
+					arrows.Remove(a);
 			}
+			OnElementsChanged();
 		}
 
-        public void DragBoxHandle(Box box, int handle, Point offset)
+		public void DragBoxHandle(Box box, int handle, Point offset)
         {
         }
 
-        public List<DragGuide> DragBoxes(Dictionary<Box, Rect> startFrames, List<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
+        public List<DragGuide> DragBoxes(Dictionary<Box, Rect> startFrames, List<Box> dragBoxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
 		{
-			if (boxes.Count == 0)
+			if (dragBoxes.Count == 0)
 				return new List<DragGuide>();
 
             foreach (var f in startFrames)
@@ -54,19 +70,17 @@ namespace BoxEditor
                 f.Key.Frame = f.Value;
             }
 			
-			var d = this;
-
-			var b0 = boxes.First();
+			var b0 = dragBoxes.First();
             var b0c = b0.Frame.Center + offset;
 
 			var moveGuides =
-                boxes.SelectMany(b => b.GetDragGuides(b.Frame, offset, Boxes.IndexOf(b)))
+                dragBoxes.SelectMany(b => b.GetDragGuides(b.Frame, offset, boxes.IndexOf(b)))
 				     .ToImmutableArray();
 			
 			var staticGuides =
-				Boxes
+				boxes
                     .Select((x, i) => (Box: x, Index: i))
-                    .Where(x => !boxes.Contains(x.Box))
+                    .Where(x => !dragBoxes.Contains(x.Box))
                     .OrderBy(x => x.Box.Frame.Center.DistanceTo(b0c))
                     .SelectMany(x => x.Box.GetDragGuides(x.Box.Frame, Point.Zero, x.Index))
 					.ToImmutableArray();
@@ -108,7 +122,7 @@ namespace BoxEditor
 					horz != null ? horz.Item3 : 0);
 			}
 
-            var dragOffsets = boxes
+            var dragOffsets = dragBoxes
                 .Select(b => (b, b.Frame + (offset + snapOffset)))
 				.ToList();
             foreach (var b in dragOffsets)
@@ -122,24 +136,26 @@ namespace BoxEditor
 				b.Item1.Frame = b.Item2;
 			}
 
+            OnBoxFramesChanged(startFrames);
+
 			var guides = new List<DragGuide>();
 			if (snapToGuides)
 			{
 				if (vert != null)
 				{
-					var mf = d.Boxes[vert.Item1.Tag].Frame;
+					var mf = boxes[vert.Item1.Tag].Frame;
 					var si = vert.Item2.Tag;
-					var sf = d.Boxes[si].Frame;
-                    var g = d.Boxes[si].GetDragGuides(d.Boxes[si].Frame, Point.Zero, si).First(x => x.Source == vert.Item2.Source);
+					var sf = boxes[si].Frame;
+                    var g = boxes[si].GetDragGuides(boxes[si].Frame, Point.Zero, si).First(x => x.Source == vert.Item2.Source);
 					//Debug.WriteLine($"V G.S={g.Source}");
 					guides.Add(g.Clip(sf.Union(mf)));
 				}
 				if (horz != null)
 				{
-					var mf = d.Boxes[horz.Item1.Tag].Frame;
+					var mf = boxes[horz.Item1.Tag].Frame;
 					var si = horz.Item2.Tag;
-					var sf = d.Boxes[si].Frame;
-                    var g = d.Boxes[si].GetDragGuides(d.Boxes[si].Frame, Point.Zero, si).First(x => x.Source == horz.Item2.Source);
+					var sf = boxes[si].Frame;
+                    var g = boxes[si].GetDragGuides(boxes[si].Frame, Point.Zero, si).First(x => x.Source == horz.Item2.Source);
 					//Debug.WriteLine($"H G.S={g.Source}");
 					guides.Add(g.Clip(sf.Union(mf)));
 				}
@@ -150,24 +166,24 @@ namespace BoxEditor
 
         List<(Box, Rect)> PreventOverlaps(List<(Box, Rect)> staticBoxes, Point staticOffset, TimeSpan maxTime)
 		{
-			var n = Boxes.Count;
+			var n = boxes.Count;
 
 			var iterChanged = true;
 			var sw = new Stopwatch();
 			sw.Start();
 			var maxMillis = (long)maxTime.TotalMilliseconds;
 
-			var offsets = Boxes.Select(x => Point.Zero).ToArray();
-			var boxFrames = Boxes.Select(x => x.FrameWithMargin).ToArray();
+			var offsets = boxes.Select(x => Point.Zero).ToArray();
+			var boxFrames = boxes.Select(x => x.FrameWithMargin).ToArray();
 
 			var staticBoxSet = staticBoxes
-				.Select(x => Boxes.IndexOf(x.Item1))
+				.Select(x => boxes.IndexOf(x.Item1))
 				.ToImmutableHashSet();
 
 			var quadtree = new Quadtree(1 << 16, 1 << 16, 16);
 			for (var i = 0; i < n; i++)
 			{
-				var b = Boxes[i];
+				var b = boxes[i];
 				quadtree.Add(i, b.Frame);
 			}
 
@@ -178,13 +194,13 @@ namespace BoxEditor
 				iterChanged = false;
 				for (var i = 0; i < n; i++)
 				{
-					var a = Boxes[i];
+					var a = boxes[i];
 					int j;
 					Point overlap;
 
-					if (quadtree.GetOverlap(Boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
+					if (quadtree.GetOverlap(boxes, offsets, i, boxFrames[i] + offsets[i], out j, out overlap))
 					{
-						var b = Boxes[j];
+						var b = boxes[j];
 
 						if (staticBoxSet.Contains(i))
 						{
@@ -231,7 +247,7 @@ namespace BoxEditor
 
 			//Debug.WriteLine($"ITER={iter}, TIME={sw.Elapsed}");
 
-			return Boxes
+			return boxes
 				.Select((b, i) => (Box: b, Index: i))
 				.Where(bt => Math.Abs(offsets[bt.Index].X) > 1e-12 || Math.Abs(offsets[bt.Index].Y) > 1e-12)
 				.Select(bt => (bt.Box, new Rect(bt.Box.Frame.Position + offsets[bt.Index], bt.Box.Frame.Size)))
@@ -240,13 +256,28 @@ namespace BoxEditor
 
 		public IEnumerable<Box> HitTestBoxes(Point point)
 		{
-			return Boxes.Where(x => x.HitTest(point)).Reverse().ToList();
+			return boxes.Where(x => x.HitTest(point)).Reverse().ToList();
 		}
+
+		void OnElementsChanged()
+		{
+			PlanPaths();
+		}
+
+		void OnBoxFramesChanged(Dictionary<Box, Rect> startFrames)
+		{
+            PlanPaths();
+		}
+
+		void PlanPaths()
+		{
+            Paths = PathPlanning.Plan(boxes.ToImmutableArray (), arrows.ToImmutableArray());
+        }
 
 		public IEnumerable<Arrow> HitTestArrows(Point point, double viewToDiagramScale)
 		{
 			var maxDist = viewToDiagramScale * 22;
-			var q = from a in Arrows
+			var q = from a in arrows
 					let p = GetArrowPath (a)
 					let d = p.DistanceTo(point)
 	                where d < a.Style.LineWidth / 2 + maxDist
@@ -257,7 +288,7 @@ namespace BoxEditor
 
 		public Path GetArrowPath(Arrow arrow)
 		{
-			var arrowIndex = Arrows.IndexOf(arrow);
+            var arrowIndex = arrows.IndexOf(arrow);
             if (arrowIndex < 0 || arrowIndex >= Paths.ArrowPaths.Length)
                 return new Path();
 			return Paths.ArrowPaths[arrowIndex].CurvedPath;
