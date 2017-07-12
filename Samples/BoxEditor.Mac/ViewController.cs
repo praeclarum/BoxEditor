@@ -66,6 +66,7 @@ namespace BoxEditor.Mac
 					100 + (v[0] - 'A') * 125,
 					50 + (v[1] - 'A') * 125,
 					100, 100);
+                b.Margin = new Size(4, 4);
 				b.AddPort("Center", new Point(0.5, 0.5), Point.Zero);
 				b.AddPort("TopCenter", new Point(0.5, 0), -Point.OneY);
 				b.AddPort("BottomCenter", new Point(0.5, 1), Point.OneY);

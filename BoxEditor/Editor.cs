@@ -112,7 +112,8 @@ namespace BoxEditor
 		Box dragBoxStartSelected = null;
 		Arrow dragArrowStartSelected = null;
 		int dragBoxHandle = 0;
-		ImmutableArray<Box> dragBoxes = ImmutableArray<Box>.Empty;
+        Dictionary<Box, Rect> dragBoxStartFrames = new Dictionary<Box, Rect>();
+        List<Box> dragBoxes = new List<Box>();
 		Box dragBoxHandleBox = null;
         bool boxFramesChanged = false;
 
@@ -150,6 +151,7 @@ namespace BoxEditor
 				{
 					touchGesture = TouchGesture.DragBoxHandle;
 					dragBoxLastDiagramLoc = diagramLoc;
+                    dragBoxStartFrames = diagram.Boxes.ToDictionary(x => x, x => x.Frame);
 					dragBoxHandle = handleHit.Item2;
 					dragBoxHandleBox = handleHit.Item1;
 				}
@@ -169,10 +171,11 @@ namespace BoxEditor
 							Select(new[] { boxHit });
 						}
 						lastEditMenuObject = null;
-					}
+                    }
 					touchGesture = TouchGesture.DragSelection;
 					dragBoxLastDiagramLoc = diagramLoc;
-					dragBoxes = selection.OfType<Box>().ToImmutableArray();
+                    dragBoxStartFrames = diagram.Boxes.ToDictionary(x => x, x => x.Frame);
+                    dragBoxes = selection.OfType<Box>().ToList ();
 					dragBoxHandle = 0;
 					dragBoxHandleBox = null;
 				}
@@ -192,7 +195,7 @@ namespace BoxEditor
 				}
 				else {
 					touchGesture = TouchGesture.None;
-					dragBoxes = ImmutableArray<Box>.Empty;
+                    dragBoxes.Clear ();
 					SelectNone();
 				}
 			}
@@ -231,7 +234,7 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						var minDist = 8.0 * viewToDiagram.A;
-						dragGuides = diagram.DragBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
+                        dragGuides = diagram.DragBoxes(dragBoxStartFrames, dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
                         boxFramesChanged = true;
 						Redraw?.Invoke();
 					}
@@ -273,7 +276,7 @@ namespace BoxEditor
 			}
 
 			touchGesture = TouchGesture.None;
-			dragBoxes = ImmutableArray<Box>.Empty;
+            dragBoxes.Clear ();
             dragGuides = new List<DragGuide>();
 			dragBoxStartSelected = null;
 			dragArrowStartSelected = null;
@@ -284,7 +287,7 @@ namespace BoxEditor
 		public void TouchCancelled(TouchEvent touch)
         {
 			touchGesture = TouchGesture.None;
-			dragBoxes = ImmutableArray<Box>.Empty;
+            dragBoxes.Clear ();
             dragGuides = new List<DragGuide>();
 			activeTouches.Remove(touch.TouchId);
 			Redraw?.Invoke();

@@ -44,26 +44,32 @@ namespace BoxEditor
         {
         }
 
-		public List<DragGuide> DragBoxes(ICollection<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
+        public List<DragGuide> DragBoxes(Dictionary<Box, Rect> startFrames, List<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
 		{
 			if (boxes.Count == 0)
 				return new List<DragGuide>();
+
+            foreach (var f in startFrames)
+            {
+                f.Key.Frame = f.Value;
+            }
 			
 			var d = this;
 
 			var b0 = boxes.First();
-			var b0c = b0.Frame.Center + offset;
+            var b0c = b0.Frame.Center + offset;
 
 			var moveGuides =
-				boxes.SelectMany(b => b.GetDragGuides(offset, Boxes.IndexOf(b)))
+                boxes.SelectMany(b => b.GetDragGuides(b.Frame, offset, Boxes.IndexOf(b)))
 				     .ToImmutableArray();
 			
 			var staticGuides =
-				Boxes.Select((x, i) => Tuple.Create(x, i))
-				     .Where(x => !boxes.Contains(x.Item1))
-				     .OrderBy(x => x.Item1.Frame.Center.DistanceTo(b0c))
-				     .SelectMany(x => x.Item1.GetDragGuides(Point.Zero, x.Item2))
-					 .ToImmutableArray();
+				Boxes
+                    .Select((x, i) => (Box: x, Index: i))
+                    .Where(x => !boxes.Contains(x.Box))
+                    .OrderBy(x => x.Box.Frame.Center.DistanceTo(b0c))
+                    .SelectMany(x => x.Box.GetDragGuides(x.Box.Frame, Point.Zero, x.Index))
+					.ToImmutableArray();
 
 			var compares = new List<Tuple<DragGuide, DragGuide, double>>();
 			foreach (var m in moveGuides)
@@ -96,17 +102,25 @@ namespace BoxEditor
 			var snapOffset = Point.Zero;
 
 			if (snapToGuides)
-			{
+            {
 				snapOffset = new Point(
 					vert != null ? vert.Item3 : 0,
 					horz != null ? horz.Item3 : 0);
 			}
 
-			var newBs = boxes
-				.Select(b => Tuple.Create(b, b.Frame + (offset + snapOffset)))
+            var dragOffsets = boxes
+                .Select(b => (b, b.Frame + (offset + snapOffset)))
 				.ToList();
+            foreach (var b in dragOffsets)
+			{
+				b.Item1.Frame = b.Item2;
+			}
 
-			PreventOverlaps(newBs, offset, maxTime);
+            var overlapOffsets = PreventOverlaps(dragOffsets, offset, maxTime);
+			foreach (var b in overlapOffsets)
+			{
+				b.Item1.Frame = b.Item2;
+			}
 
 			var guides = new List<DragGuide>();
 			if (snapToGuides)
@@ -116,7 +130,7 @@ namespace BoxEditor
 					var mf = d.Boxes[vert.Item1.Tag].Frame;
 					var si = vert.Item2.Tag;
 					var sf = d.Boxes[si].Frame;
-					var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == vert.Item2.Source);
+                    var g = d.Boxes[si].GetDragGuides(d.Boxes[si].Frame, Point.Zero, si).First(x => x.Source == vert.Item2.Source);
 					//Debug.WriteLine($"V G.S={g.Source}");
 					guides.Add(g.Clip(sf.Union(mf)));
 				}
@@ -125,7 +139,7 @@ namespace BoxEditor
 					var mf = d.Boxes[horz.Item1.Tag].Frame;
 					var si = horz.Item2.Tag;
 					var sf = d.Boxes[si].Frame;
-					var g = d.Boxes[si].GetDragGuides(Point.Zero, si).First(x => x.Source == horz.Item2.Source);
+                    var g = d.Boxes[si].GetDragGuides(d.Boxes[si].Frame, Point.Zero, si).First(x => x.Source == horz.Item2.Source);
 					//Debug.WriteLine($"H G.S={g.Source}");
 					guides.Add(g.Clip(sf.Union(mf)));
 				}
@@ -134,7 +148,7 @@ namespace BoxEditor
 			return guides;
 		}
 
-		void PreventOverlaps(List<Tuple<Box, Rect>> staticBoxes, Point staticOffset, TimeSpan maxTime)
+        List<(Box, Rect)> PreventOverlaps(List<(Box, Rect)> staticBoxes, Point staticOffset, TimeSpan maxTime)
 		{
 			var n = Boxes.Count;
 
@@ -182,7 +196,7 @@ namespace BoxEditor
 							{
 								iterChanged = true;
 								var oldfj = boxFrames[j] + offsets[j];
-								offsets[j] += new Point(overlap.X, overlap.Y);
+                                offsets[j] += new Point(overlap.X, overlap.Y);
 								quadtree.Move(j, oldfj, boxFrames[j] + offsets[j]);
 							}
 						}
@@ -217,18 +231,11 @@ namespace BoxEditor
 
 			//Debug.WriteLine($"ITER={iter}, TIME={sw.Elapsed}");
 
-			var newBs =
-				Boxes
-				.Select((b, i) => Tuple.Create(b, i))
-				.Where(bt => Math.Abs(offsets[bt.Item2].X) > 1e-12 || Math.Abs(offsets[bt.Item2].Y) > 1e-12)
-				.Select(bt => Tuple.Create(bt.Item1, new Rect(bt.Item1.Frame.Position + offsets[bt.Item2],
-					                                          bt.Item1.Frame.Size)))
+			return Boxes
+				.Select((b, i) => (Box: b, Index: i))
+				.Where(bt => Math.Abs(offsets[bt.Index].X) > 1e-12 || Math.Abs(offsets[bt.Index].Y) > 1e-12)
+				.Select(bt => (bt.Box, new Rect(bt.Box.Frame.Position + offsets[bt.Index], bt.Box.Frame.Size)))
 				.ToList();
-
-			foreach (var bt in newBs)				
-			{
-				bt.Item1.Frame = bt.Item2;
-			}
 		}
 
 		public IEnumerable<Box> HitTestBoxes(Point point)
