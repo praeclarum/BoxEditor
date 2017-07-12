@@ -129,7 +129,7 @@ namespace BoxEditor
 				var bb = b.PreventOverlapFrame;
 				if (bb.Width > 1e-7 && bb.Height > 1e-7)
 				{
-					var mb = bb.GetInflated(b.Style.Margin);
+					var mb = bb.GetInflated(b.Margin);
 					graph.AddVertex(mb.TopLeft);
 					graph.AddVertex(mb.TopRight);
 					graph.AddVertex(mb.BottomLeft);

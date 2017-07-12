@@ -5,8 +5,6 @@ namespace BoxEditor
 {
 	public class Arrow : ISelectable
     {
-		public readonly string id;
-		public string Id => id;
 		public readonly object Value;
 		public readonly ArrowStyle Style;
 		public readonly PortRef Start;
@@ -15,23 +13,13 @@ namespace BoxEditor
 		public Box StartBox => Start.Box;
 		public Box EndBox => End.Box;
 
-		public Arrow(string id, object value, ArrowStyle style, PortRef start, PortRef end)
+		public Arrow(object value, ArrowStyle style, PortRef start, PortRef end)
         {
-			if (string.IsNullOrEmpty(id))
-			{
-				throw new ArgumentException("Id must be set");
-			}
-			this.id = id;
             Value = value;
 			Style = style;
             Start = start;
             End = end;
         }
-
-		public Arrow UpdateBox(Box b, Box newb)
-		{
-			return new Arrow(Id, Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
-		}
 
 		public virtual void Draw (Path path, ICanvas canvas)
 		{

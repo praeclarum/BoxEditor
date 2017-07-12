@@ -56,7 +56,7 @@ namespace BoxEditor
 		{
 			if (b != Box) return this;
 			var pi = Box.Ports.IndexOf(Port);
-			if (0 <= pi && pi < newb.Ports.Length)
+			if (0 <= pi && pi < newb.Ports.Count)
 			{
 				return new PortRef(newb, newb.Ports[pi]);
 			}

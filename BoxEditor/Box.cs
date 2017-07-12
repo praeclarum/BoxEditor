@@ -115,11 +115,16 @@ namespace BoxEditor
 			};
 		}
 
-		/// <summary>
-		/// Whether the point is in the Frame of this box.
-		/// </summary>
-		/// <param name="point">The point to test.</param>
-		public bool HitTest(Point point)
+        public void AddPort(string v, Point point1, Point point2)
+        {
+            Ports.Add(new Port(v, new Rect (point1, Size.Zero), point2));
+        }
+
+        /// <summary>
+        /// Whether the point is in the Frame of this box.
+        /// </summary>
+        /// <param name="point">The point to test.</param>
+        public bool HitTest(Point point)
 		{
 			return Frame.Contains(point);
 		}

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -16,15 +17,17 @@ namespace BoxEditor
 		public readonly DiagramPaths Paths;
 		public readonly double DragHandleDistance;
 
-        public static Diagram Empty =
-			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
-
-		public Diagram(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows, DiagramStyle style)
+        public Diagram()
+            : this (DiagramStyle.Default)
         {
-            Boxes = boxes;
-            Arrows = arrows;
+        }
+
+		public Diagram(DiagramStyle style)
+        {
+            Boxes = new ObservableCollection<Box> ();
+            Arrows = new ObservableCollection<Arrow>();
 			Style = style;
-			Paths = PathPlanning.Plan(boxes, arrows);
+            Paths = PathPlanning.Plan(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty);
         }
 
 		public void UpdateBoxFrames(IEnumerable<Tuple<Box, Rect>> boxes)
@@ -37,7 +40,11 @@ namespace BoxEditor
 			}
 		}
 
-		public List<DragGuide> MoveBoxes(ICollection<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
+        public void DragBoxHandle(Box box, int handle, Point offset)
+        {
+        }
+
+		public List<DragGuide> DragBoxes(ICollection<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
 		{
 			if (boxes.Count == 0)
 				return new List<DragGuide>();
@@ -244,6 +251,8 @@ namespace BoxEditor
 		public Path GetArrowPath(Arrow arrow)
 		{
 			var arrowIndex = Arrows.IndexOf(arrow);
+            if (arrowIndex < 0 || arrowIndex >= Paths.ArrowPaths.Length)
+                return new Path();
 			return Paths.ArrowPaths[arrowIndex].CurvedPath;
 		}
 

@@ -13,9 +13,8 @@ namespace BoxEditor
     {
 		readonly TimeSpan MaxConstraintSolveTime = TimeSpan.FromSeconds(0.25);
 		                                                   
-        Diagram diagram = Diagram.Empty;
+        Diagram diagram = new Diagram ();
 
-		public event EventHandler<BoxesChangedEventArgs> BoxesChanged;
 		public event EventHandler SelectionChanged;
 		public event EventHandler<BoxEventArgs> ShowBoxEditor;
 		public event EventHandler<ArrowEventArgs> ShowArrowEditor;
@@ -28,29 +27,27 @@ namespace BoxEditor
             }
             set
             {
-				var selIds = selection.Where(x => x.Id != null).Select(x => x.Id).ToImmutableHashSet();
-				var hoverId = hoverSelection?.Id;
+				var sels = selection.ToImmutableHashSet();
+				var hover = hoverSelection;
                 
 				diagram = value;
 
 				var newSels = ImmutableArray.CreateBuilder<ISelectable>();
 				foreach (var b in diagram.Boxes)
 				{
-					if (selIds.Contains(b.Id))
+					if (sels.Contains(b))
 						newSels.Add(b);
-					if (b.Id == hoverId)
+					if (b == hover)
 						hoverSelection = b;
 				}
 				foreach (var b in diagram.Arrows)
 				{
-					if (selIds.Contains(b.Id))
+					if (sels.Contains(b))
 						newSels.Add(b);
-					if (b.Id == hoverId)
+					if (b == hover)
 						hoverSelection = b;
 				}
 				selection = newSels.ToImmutable();
-
-				changedBoxes = ImmutableDictionary<object, Box>.Empty;
 
 				OnDiagramChanged();
             }
@@ -59,24 +56,6 @@ namespace BoxEditor
 		void OnDiagramChanged()
 		{
 			Redraw?.Invoke();
-		}
-
-		void UpdateDiagram(Diagram newDiagram)
-		{
-			diagram = newDiagram;
-		}
-
-		ImmutableDictionary<object, Box> changedBoxes = ImmutableDictionary<object, Box>.Empty;
-
-		void OnBoxChanged(Box b, Box newb)
-		{
-			var s = selection;
-			if (s.Contains(b))
-				selection = s.Replace(b, newb);
-			if (hoverSelection == b)
-				hoverSelection = newb;
-
-			changedBoxes = changedBoxes.SetItem(newb.Id, newb);
 		}
 
 		public void ResizeView(Size newViewSize)
@@ -133,13 +112,11 @@ namespace BoxEditor
 		Box dragBoxStartSelected = null;
 		Arrow dragArrowStartSelected = null;
 		int dragBoxHandle = 0;
-		Diagram dragDiagram = Diagram.Empty;
 		ImmutableArray<Box> dragBoxes = ImmutableArray<Box>.Empty;
-		ImmutableArray<Box> dragLastBoxes = ImmutableArray<Box>.Empty;
-		Box dragBoxHandleOriginalBox = null;
 		Box dragBoxHandleBox = null;
+        bool boxFramesChanged = false;
 
-		ImmutableArray<DragGuide> dragGuides = ImmutableArray<DragGuide>.Empty;
+		List<DragGuide> dragGuides = new List<DragGuide> ();
 
 		double handleSize = 8;
 
@@ -166,15 +143,15 @@ namespace BoxEditor
 
 				var arrowHit = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault();
 
+                boxFramesChanged = false;
+
 				//				Console.WriteLine ("SELS = {0}", selection.Count);
 				if (handleHit != null)
 				{
 					touchGesture = TouchGesture.DragBoxHandle;
 					dragBoxLastDiagramLoc = diagramLoc;
-					dragDiagram = diagram;
 					dragBoxHandle = handleHit.Item2;
-					dragBoxHandleOriginalBox = handleHit.Item1;
-					dragBoxHandleBox = dragBoxHandleOriginalBox;
+					dragBoxHandleBox = handleHit.Item1;
 				}
 				else if (boxHit != null)
 				{
@@ -196,8 +173,6 @@ namespace BoxEditor
 					touchGesture = TouchGesture.DragSelection;
 					dragBoxLastDiagramLoc = diagramLoc;
 					dragBoxes = selection.OfType<Box>().ToImmutableArray();
-					dragLastBoxes = dragBoxes;
-					dragDiagram = diagram;
 					dragBoxHandle = 0;
 					dragBoxHandleBox = null;
 				}
@@ -218,7 +193,6 @@ namespace BoxEditor
 				else {
 					touchGesture = TouchGesture.None;
 					dragBoxes = ImmutableArray<Box>.Empty;
-					dragDiagram = Diagram.Empty;
 					SelectNone();
 				}
 			}
@@ -257,13 +231,8 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						var minDist = 8.0 * viewToDiagram.A;
-						dragGuides = dragDiagram.MoveBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
-						UpdateDiagram(newd);
-						foreach (var b in dragLastBoxes.Zip(mr.Item3, (x, y) => Tuple.Create(x, y)))
-						{
-							OnBoxChanged(b.Item1, b.Item2);
-						}
-						dragLastBoxes = mr.Item3;
+						dragGuides = diagram.DragBoxes(dragBoxes, d, !touch.IsCommandDown, minDist, MaxConstraintSolveTime);
+                        boxFramesChanged = true;
 						Redraw?.Invoke();
 					}
 					break;
@@ -273,14 +242,9 @@ namespace BoxEditor
 						var loc = ViewToDiagram(activeTouches.Values.First());
 						var d = loc - dragBoxLastDiagramLoc;
 						//					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
-						var newb = dragBoxHandleOriginalBox.MoveHandle(dragBoxHandle, d);
-						var newd = dragDiagram
-							.UpdateBoxes(new[] { Tuple.Create(dragBoxHandleOriginalBox, newb) })
-							.PreventOverlaps(ImmutableArray.Create(newb), Point.Zero, MaxConstraintSolveTime);
-						UpdateDiagram(newd);
-						OnBoxChanged(dragBoxHandleBox, newb);
+                        diagram.DragBoxHandle(dragBoxHandleBox, dragBoxHandle, d);
 						hoverSelection = null;
-						dragBoxHandleBox = newb;
+                        boxFramesChanged = true;
 						Redraw?.Invoke();
 					}
 					break;
@@ -289,13 +253,9 @@ namespace BoxEditor
 
 		public void TouchEnded(TouchEvent touch)
         {
-			if (changedBoxes.Count > 0)
+            if (boxFramesChanged)
 			{
-				BoxesChanged?.Invoke(this, new BoxesChangedEventArgs
-				{
-					Boxes = changedBoxes.Values.ToImmutableArray()
-				});
-				changedBoxes = ImmutableDictionary<object, Box>.Empty;
+				// All done
 			}
 			else {
 				if (dragBoxStartSelected != null)
@@ -305,7 +265,7 @@ namespace BoxEditor
 					ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected, r));
 				}
 				else if (dragArrowStartSelected != null)
-				{
+                {
 					//Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
 					var r = new Rect(touch.Location, new Size(1, 1));
 					ShowArrowEditor?.Invoke(this, new ArrowEventArgs(dragArrowStartSelected, r));
@@ -314,9 +274,7 @@ namespace BoxEditor
 
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
-			dragLastBoxes = ImmutableArray<Box>.Empty;
-			dragDiagram = Diagram.Empty;
-			dragGuides = ImmutableArray<DragGuide>.Empty;
+            dragGuides = new List<DragGuide>();
 			dragBoxStartSelected = null;
 			dragArrowStartSelected = null;
 			activeTouches.Remove(touch.TouchId);
@@ -325,20 +283,9 @@ namespace BoxEditor
 
 		public void TouchCancelled(TouchEvent touch)
         {
-			if (changedBoxes.Count > 0)
-			{
-				BoxesChanged?.Invoke(this, new BoxesChangedEventArgs
-				{
-					Boxes = changedBoxes.Values.ToImmutableArray()
-				});
-				changedBoxes = ImmutableDictionary<object, Box>.Empty;
-			}
-				
 			touchGesture = TouchGesture.None;
 			dragBoxes = ImmutableArray<Box>.Empty;
-			dragLastBoxes = ImmutableArray<Box>.Empty;
-			dragDiagram = Diagram.Empty;
-			dragGuides = ImmutableArray<DragGuide>.Empty;
+            dragGuides = new List<DragGuide>();
 			activeTouches.Remove(touch.TouchId);
 			Redraw?.Invoke();
 		}
@@ -429,12 +376,12 @@ namespace BoxEditor
 			return selection.Contains(s);
 		}
 
-		public void Select(IEnumerable<string> ids, string hoverId)
+		public void Select(IEnumerable<ISelectable> ids, ISelectable hoverId)
 		{
 			var allobjs =
 				diagram.Boxes.OfType<ISelectable>()
 					   .Concat(diagram.Arrows.OfType<ISelectable>())
-					   .ToDictionary(x => x.Id);
+					   .ToDictionary(x => x);
 						
 
 			var sels = new List<ISelectable>();
@@ -682,7 +629,7 @@ namespace BoxEditor
 				if (b != null)
 				{
 					var selWidth = 2.0 * viewToDiagram.A;
-					var f = b.Frame.GetInflated(b.Style.BorderWidth / 2.0 + selWidth / 2.0);
+					var f = b.Frame.GetInflated(selWidth / 2.0);
 					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, selWidth);
 				}
 				else {
