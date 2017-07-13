@@ -58,10 +58,10 @@
     <Reference Include="System.Core" />
     <Reference Include="Xamarin.Mac" />
     <Reference Include="NGraphics">
-      <HintPath>..\..\packages\NGraphics.0.4.0\lib\Xamarin.Mac20\NGraphics.dll</HintPath>
+      <HintPath>..\..\packages\NGraphics.0.5.0-beta1\lib\Xamarin.Mac20\NGraphics.dll</HintPath>
     </Reference>
     <Reference Include="NGraphics.Mac">
-      <HintPath>..\..\packages\NGraphics.0.4.0\lib\Xamarin.Mac20\NGraphics.Mac.dll</HintPath>
+      <HintPath>..\..\packages\NGraphics.0.5.0-beta1\lib\Xamarin.Mac20\NGraphics.Mac.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
