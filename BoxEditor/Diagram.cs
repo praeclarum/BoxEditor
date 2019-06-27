@@ -38,6 +38,12 @@ namespace BoxEditor
 			return new Diagram(Boxes, newArrows, Style);
 		}
 
+        public Diagram AddBox (Box box)
+        {
+            return new Diagram(Boxes.Add(box), Arrows, Style)
+                .PreventOverlaps(ImmutableArray.Create (box), Point.Zero, TimeSpan.FromSeconds (1.0 / 10));
+        }
+
 		public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
 		{
 			var newBoxes = Boxes;

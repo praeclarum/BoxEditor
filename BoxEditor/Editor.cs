@@ -121,9 +121,9 @@ namespace BoxEditor
 			return diagramToView.TransformRect(rect);
 		}
 
-		#region Interaction
+        #region Interaction
 
-		Dictionary<long, Point> activeTouches = new Dictionary<long, Point>();
+        Dictionary<long, Point> activeTouches = new Dictionary<long, Point>();
 
 		Point panLastCenter = Point.Zero;
 		double panLastRadius = 0;
