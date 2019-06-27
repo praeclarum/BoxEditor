@@ -38,12 +38,6 @@ namespace BoxEditor
 			return new Diagram(Boxes, newArrows, Style);
 		}
 
-        public Diagram AddBox (Box box)
-        {
-            return new Diagram(Boxes.Add(box), Arrows, Style)
-                .PreventOverlaps(ImmutableArray.Create (box), Point.Zero, TimeSpan.FromSeconds (1.0 / 10));
-        }
-
 		public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
 		{
 			var newBoxes = Boxes;
@@ -158,6 +152,12 @@ namespace BoxEditor
 
 			return Tuple.Create(d, guides.ToImmutableArray(), newBsI);
 		}
+
+        public ImmutableArray<Box> GetBoxes (IEnumerable<string> ids)
+        {
+            var s = new HashSet<string>(ids);
+            return Boxes.Where(x => s.Contains(x.Id)).ToImmutableArray();
+        }
 
 		public Diagram PreventOverlaps(ImmutableArray<Box> staticBoxes, Point staticOffset, TimeSpan maxTime)
 		{

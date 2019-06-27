@@ -620,7 +620,7 @@ namespace BoxEditor
 		public event EventHandler Redraw;
 		public event Action<Rect, ICanvas> BackgroundDrawn;
 		public event Action<Box, ICanvas> BoxDrawn;
-		public event Action<Box, Port, ICanvas> PortDrawn;
+		public event EventHandler<PortDrawnEventArgs> PortDrawn;
 		public event Action<Arrow, ICanvas> ArrowDrawn;
 
 		public void Draw(ICanvas canvas, Rect dirtyViewRect)
@@ -653,6 +653,8 @@ namespace BoxEditor
 			var handleLinePen = new Pen(diagram.Style.HandleBorderColor.WithAlpha(0.5), 1.0 * viewToDiagram.A);
 			var handleBrush = new SolidBrush(diagram.Style.HandleBackgroundColor);
 
+            var portArgs = new PortDrawnEventArgs(canvas);
+
             foreach (var b in diagram.Boxes)
             {
 				if (b.Style.BackgroundColor.A > 0)
@@ -664,9 +666,11 @@ namespace BoxEditor
 					canvas.DrawRectangle(b.Frame, b.Style.BorderColor, b.Style.BorderWidth);
 				}
 				BoxDrawn?.Invoke(b, canvas);
+                portArgs.Box = b;
                 foreach (var p in b.Ports)
                 {
-					PortDrawn?.Invoke(b, p, canvas);
+                    portArgs.Port = p;
+					PortDrawn?.Invoke(this, portArgs);
                 }
             }
             foreach (var a in diagram.Arrows)
@@ -800,7 +804,18 @@ namespace BoxEditor
 		}
 	}
 
-	public class ArrowEventArgs : EventArgs
+    public class PortDrawnEventArgs : EventArgs
+    {
+        public Box Box { get; set; }
+        public Port Port { get; set; }
+        public ICanvas Canvas { get; }
+        public PortDrawnEventArgs(ICanvas canvas)
+        {
+            Canvas = canvas;
+        }
+    }
+
+    public class ArrowEventArgs : EventArgs
 	{
 		public Arrow Arrow { get; set; }
 		public Rect Rect { get; set; }
