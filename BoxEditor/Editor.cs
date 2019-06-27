@@ -58,7 +58,7 @@ namespace BoxEditor
 
 		void OnDiagramChanged()
 		{
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 
 		void UpdateDiagram(Diagram newDiagram)
@@ -88,12 +88,12 @@ namespace BoxEditor
 		public Transform ViewToDiagramTransform
 		{
 			get { return viewToDiagram; }
-			set { viewToDiagram = value; Redraw?.Invoke(); }
+			set { viewToDiagram = value; Redraw?.Invoke(this, EventArgs.Empty); }
 		}
 		public Transform DiagramToViewTransform
 		{
 			get { return viewToDiagram.GetInverse(); }
-			set { viewToDiagram = value.GetInverse(); Redraw?.Invoke(); }
+			set { viewToDiagram = value.GetInverse(); Redraw?.Invoke(this, EventArgs.Empty); }
 		}
 		public double DiagramToViewScale
 		{
@@ -220,8 +220,12 @@ namespace BoxEditor
 					dragBoxes = ImmutableArray<Box>.Empty;
 					dragDiagram = Diagram.Empty;
 					SelectNone();
-				}
-			}
+
+                    touchGesture = TouchGesture.Pan;
+                    panLastCenter = activeTouches.Values.Aggregate(Point.Zero, (a, x) => a + x) / activeTouches.Count;
+                    panLastRadius = 1.0;
+                }
+            }
 			else {
 				touchGesture = TouchGesture.Pan;
 				panLastCenter = activeTouches.Values.Aggregate(Point.Zero, (a, x) => a + x) / activeTouches.Count;
@@ -241,7 +245,7 @@ namespace BoxEditor
 				case TouchGesture.Pan:
 					{
 						var center = activeTouches.Values.Aggregate(Point.Zero, (a, x) => a + x) / activeTouches.Count;
-						var radius = activeTouches.Values.Average(x => x.DistanceTo(panLastCenter));
+						var radius = activeTouches.Count <= 1 ? 1.0 : activeTouches.Values.Average(x => x.DistanceTo(panLastCenter));
 						viewToDiagram =
 							viewToDiagram *
 							Transform.Translate(panLastCenter - center) *
@@ -249,7 +253,7 @@ namespace BoxEditor
 
 						panLastCenter = center;
 						panLastRadius = radius;
-						Redraw?.Invoke();
+						Redraw?.Invoke(this, EventArgs.Empty);
 					}
 					break;
 				case TouchGesture.DragSelection:
@@ -266,7 +270,7 @@ namespace BoxEditor
 							OnBoxChanged(b.Item1, b.Item2);
 						}
 						dragLastBoxes = mr.Item3;
-						Redraw?.Invoke();
+						Redraw?.Invoke(this, EventArgs.Empty);
 					}
 					break;
 				case TouchGesture.DragBoxHandle:
@@ -283,7 +287,7 @@ namespace BoxEditor
 						OnBoxChanged(dragBoxHandleBox, newb);
 						hoverSelection = null;
 						dragBoxHandleBox = newb;
-						Redraw?.Invoke();
+						Redraw?.Invoke(this, EventArgs.Empty);
 					}
 					break;
 			}
@@ -322,7 +326,7 @@ namespace BoxEditor
 			dragBoxStartSelected = null;
 			dragArrowStartSelected = null;
 			activeTouches.Remove(touch.TouchId);
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 
 		public void TouchCancelled(TouchEvent touch)
@@ -342,7 +346,7 @@ namespace BoxEditor
 			dragDiagram = Diagram.Empty;
 			dragGuides = ImmutableArray<DragGuide>.Empty;
 			activeTouches.Remove(touch.TouchId);
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 
 		public void MouseMoved(TouchEvent touch)
@@ -364,7 +368,7 @@ namespace BoxEditor
 			{
 				//Debug.WriteLine($"CHOVER {newHover} <--- {hoverSelection}");
 				hoverSelection = newHover;
-				Redraw?.Invoke();
+				Redraw?.Invoke(this, EventArgs.Empty);
 				SelectionChanged?.Invoke(this, EventArgs.Empty);
 			}
 		}
@@ -383,7 +387,7 @@ namespace BoxEditor
 			var offsetn = Transform.Translate(-magLoc);
 			var t = offset * scale * offsetn * viewToDiagram;
 			viewToDiagram = t;
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 		public void MagnificationEnded(double magnification, TouchEvent touch)
 		{
@@ -401,7 +405,7 @@ namespace BoxEditor
 			var offset = Transform.Translate(-scroll / DiagramToViewScale);
 			var t = offset * viewToDiagram;
 			viewToDiagram = t;
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 		public void ScrollEnded(Point scroll, TouchEvent touch)
 		{
@@ -470,7 +474,7 @@ namespace BoxEditor
 				hoverSelection = newHover;
 				//Debug.WriteLine("SCH SetSelection HOVER === " + newHover);
 
-				Redraw?.Invoke();
+				Redraw?.Invoke(this, EventArgs.Empty);
 				if (userInitiated)
 				{
 					SelectionChanged?.Invoke(this, EventArgs.Empty);
@@ -606,14 +610,14 @@ namespace BoxEditor
 			}
 
 			//DeletedBox?.Invoke("Delete");
-			Redraw?.Invoke();
+			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 
 		#endregion
 
 		#region Drawing
 
-		public event Action Redraw;
+		public event EventHandler Redraw;
 		public event Action<Rect, ICanvas> BackgroundDrawn;
 		public event Action<Box, ICanvas> BoxDrawn;
 		public event Action<Box, Port, ICanvas> PortDrawn;

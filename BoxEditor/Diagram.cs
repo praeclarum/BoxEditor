@@ -26,7 +26,9 @@ namespace BoxEditor
 			Paths = PathPlanning.Plan(boxes, arrows);
         }
 
-		public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
+        public override string ToString() => $"Diagram with {Boxes.Length} boxes";
+
+        public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
 		{
 			return new Diagram(newBoxes, Arrows, Style);
 		}
