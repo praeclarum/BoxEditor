@@ -414,10 +414,12 @@ namespace BoxEditor
 		class VisibilityMap
 		{
 			readonly Point[] bounds;
+            readonly bool[] ignoreBox;
 
 			public VisibilityMap(ImmutableArray<Box> boxes)
 			{
 				bounds = new Point[boxes.Length * 2];
+                ignoreBox = new bool[boxes.Length];
 				for (int i = 0; i < boxes.Length; i++)
 				{
 					var b = boxes[i];
@@ -425,6 +427,7 @@ namespace BoxEditor
 					bb.Inflate(-bb.Size * 0.005);
 					bounds[i * 2] = bb.TopLeft;
 					bounds[i * 2 + 1] = bb.BottomRight;
+                    ignoreBox[i] = bb.Size.Width < 1;
 				}
 			}
 
@@ -454,7 +457,7 @@ namespace BoxEditor
 				//
 				for (int i = 0, boxIndex = 0; i < bounds.Length; i += 2, boxIndex++)
 				{
-					if (boxIndex == ignoreBox0 || boxIndex == ignoreBox1)
+					if (ignoreBox[boxIndex] || boxIndex == ignoreBox0 || boxIndex == ignoreBox1)
 						continue;
 					
 					var tmin = (bounds[i + sign0].X - origin.X) * invDirection.X;

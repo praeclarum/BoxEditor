@@ -191,7 +191,7 @@ namespace BoxEditor
                     dragArrowLastDiagramLoc = diagramLoc;
                     var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
                     var dragBoxFrame = new Rect(diagramLoc, new Size(22, 22));
-                    var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, dragBoxFrame, BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray ());
+                    var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray ());
 
                     var endRef = new PortRef(dragBox, dragBoxPort);
                     var startRef = new PortRef(portHit.Item1, portHit.Item2);
@@ -327,7 +327,7 @@ namespace BoxEditor
                             var point = dragArrowSnap.Item2.GetPoint(dragArrowSnap.Item1);
                             var f = newb.Frame;
                             var nf = new Rect(point.X - f.Width / 2, point.Y - f.Height / 2, f.Width, f.Height);
-                            newb = newb.WithFrame(nf, nf);
+                            newb = newb.WithFrame(nf, new Rect(loc, Size.Zero));
                         }
                         var newd = dragDiagram
                             .UpdateBoxes(new[] { Tuple.Create(dragArrowEndBox, newb) });
