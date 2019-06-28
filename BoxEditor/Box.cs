@@ -116,11 +116,16 @@ namespace BoxEditor
 			return new Box (Id, Value, newFrame, newPreventOverlapFrame, Style, Ports);
 		}
 
-		/// <summary>
-		/// Get a new box moved by a distance d.
-		/// </summary>
-		/// <param name="d">The distance to move the box.</param>
-		public Box Move(Point d)
+        public Box WithPorts(ImmutableArray<Port> ports)
+        {
+            return new Box(Id, Value, Frame, PreventOverlapFrame, Style, ports);
+        }
+
+        /// <summary>
+        /// Get a new box moved by a distance d.
+        /// </summary>
+        /// <param name="d">The distance to move the box.</param>
+        public Box Move(Point d)
 		{
 			var newFrame = new Rect(Frame.TopLeft + d, Frame.Size);
 			var newPreventOverlapFrame = new Rect(PreventOverlapFrame.TopLeft + d, PreventOverlapFrame.Size);
@@ -251,7 +256,7 @@ namespace BoxEditor
 		/// <param name="direction">Direction arrows should leave this port.</param>
 		public void AddPort(string id, object value, Point relativePoint, Size size, Point direction)
         {
-			Ports.Add(new Port(id, value, relativePoint, size, direction));
+			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, size, direction));
         }
 
 		/// <summary>
@@ -262,7 +267,7 @@ namespace BoxEditor
 		/// <param name="direction">Direction arrows should leave this port.</param>
 		public void AddPort(string id, object value, Point relativePoint, Point direction)
 		{
-			Ports.Add(new Port(id, value, relativePoint, Size.Zero, direction));
+			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, Size.Zero, direction));
 		}
 
 		/// <summary>

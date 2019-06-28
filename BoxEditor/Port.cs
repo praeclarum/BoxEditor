@@ -7,17 +7,28 @@ namespace BoxEditor
     {
         public readonly string Id;
         public readonly object Value;
-		public readonly Point RelativePosition;
+        public readonly uint Kind;
+        public readonly uint AcceptMask;
+        public readonly int MaxConnections;
+        public readonly Point RelativePosition;
         public readonly Size Size;
 		public readonly Point Direction;
 
-		public Port(string id, object value, Point relativePosition, Size size, Point direction)
+		public Port(string id, object value, uint kind, uint acceptMask, int maxConnections, Point relativePosition, Size size, Point direction)
         {
             Id = id;
             Value = value;
+            Kind = kind;
+            MaxConnections = maxConnections;
+            AcceptMask = acceptMask;
             RelativePosition = relativePosition;
             Size = size;
 			Direction = direction;
+        }
+
+        public Port WithDirection(Point direction)
+        {
+            return new Port(Id, Value, Kind, AcceptMask, MaxConnections, RelativePosition, Size, direction);
         }
 
 		public Point GetPoint(Box inBox)
@@ -41,6 +52,11 @@ namespace BoxEditor
 				Size.Height);
 			return pf;
 		}
+
+        public bool CanConnectTo(Port other)
+        {
+            return (AcceptMask & other.Kind) != 0u;
+        }
 	}
 
 	public class PortRef

@@ -149,6 +149,8 @@ namespace BoxEditor
 
 		double handleSize = 8;
 
+        public PortRef DraggingPort => dragArrow?.Start;
+
 		public void TouchBegan (TouchEvent touch)
         {
 			activeTouches[touch.TouchId] = touch.Location;
@@ -189,7 +191,7 @@ namespace BoxEditor
                 {
                     touchGesture = TouchGesture.DragArrow;
                     dragArrowLastDiagramLoc = diagramLoc;
-                    var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
+                    var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
                     var dragBoxFrame = new Rect(diagramLoc, new Size(22, 22));
                     var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray ());
 
@@ -327,7 +329,8 @@ namespace BoxEditor
                             var point = dragArrowSnap.Item2.GetPoint(dragArrowSnap.Item1);
                             var f = newb.Frame;
                             var nf = new Rect(point.X - f.Width / 2, point.Y - f.Height / 2, f.Width, f.Height);
-                            newb = newb.WithFrame(nf, new Rect(loc, Size.Zero));
+                            var p = newb.Ports[0].WithDirection(dragArrowSnap.Item2.Direction);
+                            newb = newb.WithFrame(nf, new Rect(loc, Size.Zero)).WithPorts(ImmutableArray.Create(p));
                         }
                         var newd = dragDiagram
                             .UpdateBoxes(new[] { Tuple.Create(dragArrowEndBox, newb) });
@@ -484,7 +487,19 @@ namespace BoxEditor
         {
             var ports = diagram.HitTestPorts(point, ViewToDiagramScale);
             var r = ports.FirstOrDefault(x => x.Item1.Id != dragArrow.StartBox.Id && x.Item2 != dragArrow.Start.Port &&
-                x.Item1.Id != dragArrow.EndBox.Id && x.Item2 != dragArrow.End.Port);
+                x.Item1.Id != dragArrow.EndBox.Id && x.Item2 != dragArrow.End.Port &&
+                dragArrow.Start.Port.CanConnectTo (x.Item2));
+            if (r == null)
+            {
+                var boxes = diagram.HitTestBoxes(point);
+                var q = from b in boxes
+                        from p in b.Ports
+                        where dragArrow.Start.Port.CanConnectTo(p)
+                        let d = p.GetPoint(b).DistanceTo(point)
+                        orderby d
+                        select Tuple.Create(b, p);
+                r = q.FirstOrDefault();
+            }
             return r;
         }
 

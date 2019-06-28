@@ -420,6 +420,7 @@ namespace BoxEditor
 			{
 				bounds = new Point[boxes.Length * 2];
                 ignoreBox = new bool[boxes.Length];
+                var ignoresToCascade = new List<int>();
 				for (int i = 0; i < boxes.Length; i++)
 				{
 					var b = boxes[i];
@@ -428,7 +429,28 @@ namespace BoxEditor
 					bounds[i * 2] = bb.TopLeft;
 					bounds[i * 2 + 1] = bb.BottomRight;
                     ignoreBox[i] = bb.Size.Width < 1;
+                    if (ignoreBox[i])
+                        ignoresToCascade.Add(i);
 				}
+                var cascaded = new HashSet<int>();
+                while (ignoresToCascade.Count > 0)
+                {
+                    var igs = ignoresToCascade.ToArray();
+                    ignoresToCascade.Clear();
+                    foreach (var i in igs)
+                    {
+                        cascaded.Add (i);
+                        ignoreBox[i] = true;
+                        var f = boxes[i].Frame;
+                        for (var j = 0; j < ignoreBox.Length; j++)
+                        {
+                            if (i == j)
+                                continue;
+                            if (boxes[j].Frame.Intersects(f) && !cascaded.Contains(j))
+                                ignoresToCascade.Add(j);
+                        }
+                    }
+                }
 			}
 
 			/// <summary>
