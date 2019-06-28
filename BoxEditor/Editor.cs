@@ -359,8 +359,7 @@ namespace BoxEditor
                 });
                 changedBoxes = ImmutableDictionary<object, Box>.Empty;
             }
-
-            if (!cancelled && changedBoxes.Count == 0)
+            else if (!cancelled)
             {
                 if (dragBoxStartSelected != null)
                 {
@@ -497,9 +496,14 @@ namespace BoxEditor
 
 		ISelectable hoverSelection = null;
 
-		bool IsSelected(ISelectable s)
-		{
-			return selection.Contains(s);
+        bool IsSelected(ISelectable s)
+        {
+            return selection.Contains(s);
+            //return selection.Any(x => {
+            //    var r = x.Id == s.Id;
+            //    //Debug.WriteLine($"ISEL? {x.Id} == {s.Id} == {r}");
+            //    return r;
+            //});
 		}
 
 		public void Select(IEnumerable<string> ids, string hoverId)
@@ -507,8 +511,7 @@ namespace BoxEditor
 			var allobjs =
 				diagram.Boxes.OfType<ISelectable>()
 					   .Concat(diagram.Arrows.OfType<ISelectable>())
-					   .ToDictionary(x => x.Id);
-						
+					   .ToDictionary(x => x.Id);						
 
 			var sels = new List<ISelectable>();
 			foreach (var id in ids)

@@ -44,6 +44,8 @@ namespace BoxEditor
 		{
 		}
 
+        public override string ToString() => $"Box {Id}";
+
 		public Rect FrameWithMargin => Frame.GetInflated(Style.Margin);
 
 		/// <summary>
@@ -89,11 +91,7 @@ namespace BoxEditor
 		/// can be while still considered a hit.</param>
 		public Tuple<int, double> HitTestHandles(Point point, Size handleSize, double maxDistance)
 		{
-			//Debug.WriteLine ("HIT? {0} {1} {2}", this, point, maxDistance);
-
-			var nohit = Frame.GetInflated(-handleSize / 2);
-			if (nohit.Contains(point))
-				return null;
+            //Debug.WriteLine("HIT? {0} {1} {2}", this, point, maxDistance);
 
 			var hpoints = GetHandlePoints();
 			var q =
@@ -103,7 +101,9 @@ namespace BoxEditor
 				orderby d
 				select Tuple.Create(i, d);
 
-			return q.FirstOrDefault();
+			var r = q.FirstOrDefault();
+            //Debug.WriteLine("  ..HIT {0}", r);
+            return r;
 		}
 
 		/// <summary>

@@ -68,6 +68,7 @@ namespace BoxEditor
 			{
 				var b = e.Item1;
 				var newb = e.Item2;
+                //Debug.WriteLine($"D.Update {b} -> {newb}");
 				newBoxes = newBoxes.Replace(b, newb);
 
 				var q = from a in newArrows
