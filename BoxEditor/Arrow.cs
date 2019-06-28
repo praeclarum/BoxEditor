@@ -32,7 +32,12 @@ namespace BoxEditor
 		{
 			return new Arrow(Id, Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
 		}
-	}
+
+        public Arrow WithEnd(Box box, Port port)
+        {
+            return new Arrow(Id, Value, Style, Start, new PortRef (box, port));
+        }
+    }
 
 	public class ArrowStyle
 	{

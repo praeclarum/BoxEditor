@@ -5,36 +5,40 @@ namespace BoxEditor
 {
     public class Port
     {
+        public readonly string Id;
         public readonly object Value;
-		public readonly Rect RelativeFrame;
+		public readonly Point RelativePosition;
+        public readonly Size Size;
 		public readonly Point Direction;
 
-		public Port(object value, Rect relativeFrame, Point direction)
+		public Port(string id, object value, Point relativePosition, Size size, Point direction)
         {
+            Id = id;
             Value = value;
-            RelativeFrame = relativeFrame;
+            RelativePosition = relativePosition;
+            Size = size;
 			Direction = direction;
         }
 
-		public Port Move(Point d)
-		{
-			return new Port(Value, RelativeFrame + d, Direction);
-		}
-
 		public Point GetPoint(Box inBox)
 		{
-			return GetFrame(inBox).Center;
-		}
+            var bf = inBox.Frame;
+            var rf = RelativePosition;
+            var pf = new Point(
+                bf.X + rf.X * bf.Width,
+                bf.Y + rf.Y * bf.Height);
+            return pf;
+        }
 
-		public Rect GetFrame(Box inBox)
+        public Rect GetFrame(Box inBox)
 		{
 			var bf = inBox.Frame;
-			var rf = RelativeFrame;
+			var rf = RelativePosition;
 			var pf = new Rect(
-				bf.X + rf.X * bf.Width,
-				bf.Y + rf.Y * bf.Height,
-				rf.Width * bf.Width,
-				rf.Height * bf.Height);
+				bf.X + rf.X * bf.Width - Size.Width / 2,
+				bf.Y + rf.Y * bf.Height - Size.Height / 2,
+				Size.Width,
+				Size.Height);
 			return pf;
 		}
 	}

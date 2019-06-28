@@ -13,7 +13,9 @@ namespace BoxEditor
         public readonly ImmutableArray<Box> Boxes;
         public readonly ImmutableArray<Arrow> Arrows;
 		public readonly DiagramStyle Style;
-		public readonly DiagramPaths Paths;
+        public DiagramPaths Paths => paths.Value;
+
+        readonly Lazy<DiagramPaths> paths;
 
         public static Diagram Empty =
 			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
@@ -23,7 +25,7 @@ namespace BoxEditor
             Boxes = boxes;
             Arrows = arrows;
 			Style = style;
-			Paths = PathPlanning.Plan(boxes, arrows);
+			paths = new Lazy<DiagramPaths> (() => PathPlanning.Plan(boxes, arrows));
         }
 
         public override string ToString() => $"Diagram with {Boxes.Length} boxes";
@@ -38,7 +40,27 @@ namespace BoxEditor
 			return new Diagram(Boxes, newArrows, Style);
 		}
 
-		public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
+        public Diagram AddBox (Box box)
+        {
+            return WithBoxes(Boxes.Concat(new[] { box }).ToImmutableArray());
+        }
+
+        public Diagram RemoveBox(Box box)
+        {
+            return WithBoxes(Boxes.RemoveAll (x => x.Id == box.Id));
+        }
+
+        public Diagram AddArrow (Arrow arrow)
+        {
+            return WithArrows(Arrows.Concat(new[] { arrow }).ToImmutableArray());
+        }
+
+        public Diagram UpdateArrow(Arrow oldArrow, Arrow newArrow)
+        {
+            return WithArrows(Arrows.Replace(oldArrow, newArrow));
+        }
+
+        public Diagram UpdateBoxes(IEnumerable<Tuple<Box, Box>> boxes)
 		{
 			var newBoxes = Boxes;
 			var newArrows = Arrows;
@@ -311,7 +333,20 @@ namespace BoxEditor
 			return q.ToList();
 		}
 
-		public Path GetArrowPath(Arrow arrow)
+        public IEnumerable<Tuple<Box, Port>> HitTestPorts(Point point, double viewToDiagramScale)
+        {
+            var maxDist = viewToDiagramScale * 22;
+            var q = from b in Boxes
+                    from p in b.Ports
+                    let pfr = p.GetFrame (b)
+                    let d = pfr.Center.DistanceTo(point)
+                    where d < maxDist
+                    orderby d ascending
+                    select Tuple.Create(b, p);
+            return q.ToList();
+        }
+
+        public Path GetArrowPath(Arrow arrow)
 		{
 			var arrowIndex = Arrows.IndexOf(arrow);
 			return Paths.ArrowPaths[arrowIndex].CurvedPath;
