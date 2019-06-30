@@ -149,7 +149,7 @@ namespace BoxEditor
 
 		double handleSize = 8;
 
-        public PortRef DraggingPort => dragArrow?.Start;
+        public PortRef? DraggingPort => dragArrow?.Start;
 
 		public void TouchBegan (TouchEvent touch)
         {
@@ -488,13 +488,13 @@ namespace BoxEditor
             var ports = diagram.HitTestPorts(point, ViewToDiagramScale);
             var r = ports.FirstOrDefault(x => x.Item1.Id != dragArrow.StartBox.Id && x.Item2 != dragArrow.Start.Port &&
                 x.Item1.Id != dragArrow.EndBox.Id && x.Item2 != dragArrow.End.Port &&
-                dragArrow.Start.Port.CanConnectTo (x.Item2));
+                diagram.CanConnectPorts (dragArrow.Start, new PortRef(x.Item1, x.Item2)));
             if (r == null)
             {
                 var boxes = diagram.HitTestBoxes(point);
                 var q = from b in boxes
                         from p in b.Ports
-                        where dragArrow.Start.Port.CanConnectTo(p)
+                        where diagram.CanConnectPorts (dragArrow.Start, new PortRef(b, p))
                         let d = p.GetPoint(b).DistanceTo(point)
                         orderby d
                         select Tuple.Create(b, p);

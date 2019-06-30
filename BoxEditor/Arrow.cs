@@ -28,7 +28,9 @@ namespace BoxEditor
             End = end;
         }
 
-		public Arrow UpdateBox(Box b, Box newb)
+        public override string ToString() => $"Arrow {Id}";
+
+        public Arrow UpdateBox(Box b, Box newb)
 		{
 			return new Arrow(Id, Value, Style, Start.UpdateBox(b,newb), End.UpdateBox(b,newb));
 		}

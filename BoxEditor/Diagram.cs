@@ -13,9 +13,12 @@ namespace BoxEditor
         public readonly ImmutableArray<Box> Boxes;
         public readonly ImmutableArray<Arrow> Arrows;
 		public readonly DiagramStyle Style;
-        public DiagramPaths Paths => paths.Value;
 
         readonly Lazy<DiagramPaths> paths;
+        public DiagramPaths Paths => paths.Value;
+
+        readonly Lazy<ImmutableDictionary<PortRef, ImmutableArray<Arrow>>> portArrows;
+        public ImmutableDictionary<PortRef, ImmutableArray<Arrow>> PortArrows => portArrows.Value;
 
         public static Diagram Empty =
 			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
@@ -26,6 +29,7 @@ namespace BoxEditor
             Arrows = arrows;
 			Style = style;
 			paths = new Lazy<DiagramPaths> (() => PathPlanning.Plan(boxes, arrows));
+            portArrows = new Lazy<ImmutableDictionary<PortRef, ImmutableArray<Arrow>>>(this.GetPortArrows);
         }
 
         public override string ToString() => $"Diagram with {Boxes.Length} boxes";
@@ -376,7 +380,59 @@ namespace BoxEditor
 			return p;
 		}
 
-	}
+        public bool CanConnectPorts(PortRef start, PortRef end)
+        {
+            var acceptable =
+                (end.Port.AcceptMask & start.Port.Kind) != 0u &&
+                (start.Port.AcceptMask & end.Port.Kind) != 0u;
+            if (!acceptable)
+                return false;
+            var correctNumber =
+                PortArrows.ContainsKey(end) && PortArrows[end].Length < end.Port.MaxConnections;
+            if (!correctNumber)
+                return false;
+            var dup =
+                PortArrows[end].Any(x => x.Start.EqualIds(start) && x.End.EqualIds(end) ||
+                                         x.End.EqualIds(start) && x.Start.EqualIds(end));
+            return !dup;
+        }
+
+        ImmutableDictionary<PortRef, ImmutableArray<Arrow>> GetPortArrows()
+        {
+            var eq = new PortRefIdEquality();
+            var pas = new Dictionary<PortRef, List<Arrow>>(eq);
+            foreach (var b in Boxes)
+            {
+                foreach (var p in b.Ports)
+                {
+                    pas[new PortRef(b, p)] = new List<Arrow>();
+                }
+            }
+            void Add (PortRef pr, Arrow a)
+            {
+                if (!pas.TryGetValue(pr, out var arrows))
+                {
+                    arrows = new List<Arrow>();
+                    pas.Add(pr, arrows);
+                }
+                arrows.Add(a);
+            }
+            foreach (var a in Arrows)
+            {
+                Add(a.Start, a);
+                Add(a.End, a);
+            }
+
+            //Debug.WriteLine($"----------");
+            var r = ImmutableDictionary.Create<PortRef, ImmutableArray<Arrow>>(eq);
+            foreach (var kv in pas)
+            {
+                //Debug.WriteLine($"{kv.Key} == {string.Join(", ", kv.Value)}");
+                r = r.Add(kv.Key, ImmutableArray.Create (kv.Value.ToArray ()));
+            }
+            return r;
+        }
+    }
 
 	public enum DragGuideSource
 	{

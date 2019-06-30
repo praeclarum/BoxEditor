@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NGraphics;
 
 namespace BoxEditor
@@ -26,6 +27,8 @@ namespace BoxEditor
 			Direction = direction;
         }
 
+        public override string ToString() => $"Port {Id}";
+
         public Port WithDirection(Point direction)
         {
             return new Port(Id, Value, Kind, AcceptMask, MaxConnections, RelativePosition, Size, direction);
@@ -52,14 +55,9 @@ namespace BoxEditor
 				Size.Height);
 			return pf;
 		}
-
-        public bool CanConnectTo(Port other)
-        {
-            return (AcceptMask & other.Kind) != 0u;
-        }
 	}
 
-	public class PortRef
+	public struct PortRef
 	{
 		public readonly Box Box;
 		public readonly Port Port;
@@ -82,5 +80,24 @@ namespace BoxEditor
 		}
 		public Rect PortFrame => Port.GetFrame(Box);
 		public Point PortPoint => Port.GetPoint(Box);
-	}
+        public override string ToString() => $"{Box} : {Port}";
+
+        public bool EqualIds(PortRef other)
+        {
+            return Box.Id == other.Box.Id && Port.Id == other.Port.Id;
+        }
+    }
+
+    public class PortRefIdEquality : IEqualityComparer<PortRef>
+    {
+        public bool Equals(PortRef x, PortRef y)
+        {
+            return x.Box.Id == y.Box.Id && x.Port.Id == y.Port.Id;
+        }
+
+        public int GetHashCode(PortRef obj)
+        {
+            return obj.Box.Id.GetHashCode() + obj.Port.Id.GetHashCode();
+        }
+    }
 }
