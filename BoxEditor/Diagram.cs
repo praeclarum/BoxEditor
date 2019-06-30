@@ -59,6 +59,11 @@ namespace BoxEditor
             return WithArrows(Arrows.Concat(new[] { arrow }).ToImmutableArray());
         }
 
+        public Diagram RemoveArrow(Arrow arrow)
+        {
+            return WithArrows(Arrows.RemoveAll (x => x.Id == arrow.Id));
+        }
+
         public Diagram UpdateArrow(Arrow oldArrow, Arrow newArrow)
         {
             return WithArrows(Arrows.Replace(oldArrow, newArrow));
@@ -73,7 +78,7 @@ namespace BoxEditor
 				var b = e.Item1;
 				var newb = e.Item2;
                 //Debug.WriteLine($"D.Update {b} -> {newb}");
-				newBoxes = newBoxes.Replace(b, newb);
+                newBoxes = newBoxes.Replace(b, newb);
 
 				var q = from a in newArrows
 						where a.StartBox == b || a.EndBox == b

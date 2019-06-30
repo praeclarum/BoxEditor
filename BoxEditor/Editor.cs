@@ -20,6 +20,7 @@ namespace BoxEditor
 		public event EventHandler<BoxEventArgs> ShowBoxEditor;
 		public event EventHandler<ArrowEventArgs> ShowArrowEditor;
         public event EventHandler<ArrowChangedEventArgs> ArrowChanged;
+        public event EventHandler<ArrowEventArgs> ArrowRemoved;
 
         public Diagram Diagram
         {
@@ -143,6 +144,9 @@ namespace BoxEditor
         Point dragArrowLastDiagramLoc = Point.Zero;
         Arrow dragArrow = null;
         Box dragArrowEndBox = null;
+        Arrow dragArrowExisting = null;
+        bool dragArrowDragged = false;
+        Tuple<Box, Port> dragArrowPortHit = null;
         Tuple<Box, Port> dragArrowSnap = null;
 
         ImmutableArray<DragGuide> dragGuides = ImmutableArray<DragGuide>.Empty;
@@ -175,7 +179,7 @@ namespace BoxEditor
                 var portHit = diagram.HitTestPorts(diagramLoc, viewToDiagram.A).FirstOrDefault();
                 //Debug.WriteLine("PORT HIT " + portHit);
 
-				var arrowHit = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault();
+				var arrowHit = diagram.HitTestArrows(diagramLoc, viewToDiagram.A).FirstOrDefault(x => x.Id != "TEMPDRAG");
 
 				//				Console.WriteLine ("SELS = {0}", selection.Count);
 				if (handleHit != null)
@@ -189,20 +193,11 @@ namespace BoxEditor
 				}
                 else if (portHit != null)
                 {
-                    touchGesture = TouchGesture.DragArrow;
-                    dragArrowLastDiagramLoc = diagramLoc;
-                    var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
-                    var dragBoxFrame = new Rect(diagramLoc, new Size(22, 22));
-                    var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray ());
-
-                    var endRef = new PortRef(dragBox, dragBoxPort);
-                    var startRef = new PortRef(portHit.Item1, portHit.Item2);
-                    dragArrow = new Arrow("TEMPDRAG", "TEMPDRAG", ArrowStyle.Default, startRef, endRef);
-                    dragArrowEndBox = dragBox;
+                    BeginDragArrow(diagramLoc, portHit);
+                    dragArrowExisting = null;
                     dragOriginalDiagram = diagram;
-                    dragDiagram = diagram.AddBox(dragArrowEndBox).AddArrow(dragArrow);
                 }
-				else if (boxHit != null)
+                else if (boxHit != null)
 				{
 					dragBoxStartSelected = IsSelected(boxHit) ? boxHit : null;
 					if (dragBoxStartSelected == null)
@@ -229,19 +224,16 @@ namespace BoxEditor
 				}
 				else if (arrowHit != null)
 				{
-					dragArrowStartSelected = IsSelected(arrowHit) ? arrowHit : null;
-					if (touch.IsShiftDown)
-					{
-						if (!selection.Contains(arrowHit))
-						{
-							Select(selection.Add(arrowHit));
-						}
-					}
-					else {
-						Select(new[] { arrowHit });
-					}
-				}
-				else {
+                    var startD = diagramLoc.DistanceTo (arrowHit.Start.PortPoint);
+                    var endD = diagramLoc.DistanceTo(arrowHit.End.PortPoint);
+                    var nearStart = startD < endD;
+
+                    var pr = nearStart ? arrowHit.End : arrowHit.Start;
+                    BeginDragArrow(diagramLoc, Tuple.Create(pr.Box, pr.Port));
+                    dragArrowExisting = arrowHit;
+                    dragOriginalDiagram = diagram;
+                }
+                else {
 					touchGesture = TouchGesture.None;
 					dragBoxes = ImmutableArray<Box>.Empty;
 					dragDiagram = Diagram.Empty;
@@ -260,7 +252,7 @@ namespace BoxEditor
 			}
 		}
 
-		public void TouchMoved(TouchEvent touch)
+        public void TouchMoved(TouchEvent touch)
         {
 			//			Console.WriteLine ("TOUCH " + touch.Location);
 
@@ -317,12 +309,16 @@ namespace BoxEditor
 					}
 					break;
                 case TouchGesture.DragArrow:
-                    if (dragArrowEndBox != null)
                     {
                         var loc = ViewToDiagram(activeTouches.Values.First());
+                        if (!dragArrowDragged)
+                        {
+                            FirstMoveDragArrow(loc);
+                        }
+                        dragArrowDragged = true;
                         var d = loc - dragArrowLastDiagramLoc;
                         //					Console.WriteLine ("MOVE HANDLE = {0}", dragBoxHandle);
-                        var newb = dragArrowEndBox.Move (d);
+                        var newb = dragArrowEndBox.Move(d);
                         dragArrowSnap = SnapArrow(loc);
                         if (dragArrowSnap != null)
                         {
@@ -378,19 +374,37 @@ namespace BoxEditor
                 }
             }
 
-            if (dragArrow != null && dragOriginalDiagram != null)
+            if (touchGesture == TouchGesture.DragArrow)
             {
-                if (!cancelled && dragArrowSnap != null)
+                if (dragArrowExisting != null && !dragArrowDragged)
                 {
-                    var newArrow = dragArrow.WithEnd(dragArrowSnap.Item1, dragArrowSnap.Item2);
-                    var d = dragDiagram.RemoveBox(dragArrow.EndBox).UpdateArrow(dragArrow, newArrow);
-                    ArrowChanged?.Invoke(this, new ArrowChangedEventArgs { OldArrow = null, NewArrow = newArrow });
-                    UpdateDiagram(d);
+                    dragArrowStartSelected = IsSelected(dragArrowExisting) ? dragArrowExisting : null;
+                    if (touch.IsShiftDown)
+                    {
+                        if (!selection.Contains(dragArrowExisting))
+                        {
+                            Select(selection.Add(dragArrowExisting));
+                        }
+                    }
+                    else
+                    {
+                        Select(new[] { dragArrowExisting });
+                    }
                 }
                 else
                 {
-                    var d = dragOriginalDiagram;
-                    UpdateDiagram(d);
+                    if (!cancelled && dragArrowSnap != null)
+                    {
+                        var newArrow = dragArrow.WithEnd(dragArrowSnap.Item1, dragArrowSnap.Item2);
+                        var d = dragDiagram.RemoveBox(dragArrow.EndBox).UpdateArrow(dragArrow, newArrow);
+                        UpdateDiagram(d);
+                        ArrowChanged?.Invoke(this, new ArrowChangedEventArgs { OldArrow = null, NewArrow = newArrow });
+                    }
+                    else
+                    {
+                        var d = dragDiagram.RemoveBox(dragArrow.EndBox).RemoveArrow(dragArrow);
+                        UpdateDiagram(d);
+                    }
                 }
             }
 
@@ -405,6 +419,8 @@ namespace BoxEditor
             dragArrow = null;
             dragArrowEndBox = null;
             dragArrowSnap = null;
+            dragArrowDragged = false;
+            dragArrowPortHit = null;
             activeTouches.Remove(touch.TouchId);
             Redraw?.Invoke(this, EventArgs.Empty);
         }
@@ -503,11 +519,40 @@ namespace BoxEditor
             return r;
         }
 
-		#endregion
+        void BeginDragArrow(Point diagramLoc, Tuple<Box, Port> portHit)
+        {
+            touchGesture = TouchGesture.DragArrow;
+            dragArrowLastDiagramLoc = diagramLoc;
+            dragArrowDragged = false;
+            dragArrowPortHit = portHit;
+        }
 
-		#region Selection
+        void FirstMoveDragArrow(Point diagramLoc)
+        {
+            var portHit = dragArrowPortHit;
+            touchGesture = TouchGesture.DragArrow;
+            dragArrowLastDiagramLoc = diagramLoc;
+            var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
+            var dragBoxFrame = new Rect(diagramLoc, new Size(22, 22));
+            var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray());
+            var endRef = new PortRef(dragBox, dragBoxPort);
+            var startRef = new PortRef(portHit.Item1, portHit.Item2);
+            dragArrow = new Arrow("TEMPDRAG", "TEMPDRAG", ArrowStyle.Default, startRef, endRef);
+            dragArrowEndBox = dragBox;
+            dragDiagram = diagram.AddBox(dragArrowEndBox).AddArrow(dragArrow);
 
-		ImmutableArray<ISelectable> selection = ImmutableArray<ISelectable>.Empty;
+            if (dragArrowExisting != null)
+            {
+                dragDiagram = dragDiagram.RemoveArrow(dragArrowExisting);
+                ArrowRemoved?.Invoke(this, new ArrowEventArgs(dragArrowExisting, new Rect(diagramLoc, Size.Zero)));
+            }
+        }
+
+        #endregion
+
+        #region Selection
+
+        ImmutableArray<ISelectable> selection = ImmutableArray<ISelectable>.Empty;
 
 		ISelectable hoverSelection = null;
 
