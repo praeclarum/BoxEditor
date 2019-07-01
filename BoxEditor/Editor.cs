@@ -402,8 +402,15 @@ namespace BoxEditor
                     }
                     else
                     {
-                        var d = dragDiagram.RemoveBox(dragArrow.EndBox).RemoveArrow(dragArrow);
-                        UpdateDiagram(d);
+                        if (dragArrow != null)
+                        {
+                            var d = dragDiagram.RemoveBox(dragArrow.EndBox).RemoveArrow(dragArrow);
+                            UpdateDiagram(d);
+                        }
+                        else
+                        {
+                            UpdateDiagram(dragDiagram);
+                        }
                     }
                 }
             }
@@ -748,163 +755,118 @@ namespace BoxEditor
 		#region Drawing
 
 		public event EventHandler Redraw;
-		public event Action<Rect, ICanvas> BackgroundDrawn;
-		public event Action<Box, ICanvas> BoxDrawn;
-		public event EventHandler<PortDrawnEventArgs> PortDrawn;
-		public event Action<Arrow, ICanvas> ArrowDrawn;
+        public DiagramDrawer Drawer { get; set; } = new DiagramDrawer();
 
-		public void Draw(ICanvas canvas, Rect dirtyViewRect)
+        public void Draw(ICanvas canvas, Rect dirtyViewRect)
         {
-			//Debug.WriteLine("DRAW");
+            Drawer.Draw(Diagram, canvas, dirtyViewRect, viewToDiagram, () => this.DrawEdits (canvas));
+        }
 
-			//
-			// Draw the background in View-scale
-			//
-			if (diagram.Style.BackgroundColor.A > 0)
-			{
-				canvas.FillRectangle(dirtyViewRect, diagram.Style.BackgroundColor);
-			}
-			BackgroundDrawn?.Invoke(dirtyViewRect, canvas);
-
-			//
-			// Transform the view
-			//
-			var diagramToView = viewToDiagram.GetInverse();
-			var needsTx = diagramToView != Transform.Identity;
-			if (needsTx)
-			{
-				canvas.SaveState();
-				canvas.Transform(diagramToView);
-			}
-
-			//var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
-
-			var handlePen = new Pen(diagram.Style.HandleBorderColor, 1.0 * viewToDiagram.A);
-			var handleLinePen = new Pen(diagram.Style.HandleBorderColor.WithAlpha(0.5), 1.0 * viewToDiagram.A);
-			var handleBrush = new SolidBrush(diagram.Style.HandleBackgroundColor);
-
-            var portArgs = new PortDrawnEventArgs(canvas);
+        void DrawEdits(ICanvas canvas)
+        {
+            var handlePen = new Pen(diagram.Style.HandleBorderColor, 1.0 * viewToDiagram.A);
+            var handleLinePen = new Pen(diagram.Style.HandleBorderColor.WithAlpha(0.5), 1.0 * viewToDiagram.A);
+            var handleBrush = new SolidBrush(diagram.Style.HandleBackgroundColor);
 
             foreach (var b in diagram.Boxes)
             {
-				if (b.Style.BackgroundColor.A > 0)
-				{
-					canvas.FillRectangle(b.Frame, b.Style.BackgroundColor);
-				}
-				if (b.Style.BorderColor.A > 0)
-				{
-					canvas.DrawRectangle(b.Frame, b.Style.BorderColor, b.Style.BorderWidth);
-				}
-				BoxDrawn?.Invoke(b, canvas);
-                portArgs.Box = b;
-                foreach (var p in b.Ports)
+                if (IsSelected(b))
                 {
-                    portArgs.Port = p;
-					PortDrawn?.Invoke(this, portArgs);
+                    canvas.DrawRectangle(b.Frame, handleLinePen);
+                    DrawBoxHandles(b, canvas, handlePen, handleBrush);
                 }
             }
             foreach (var a in diagram.Arrows)
             {
-				var p = diagram.GetArrowPath(a);
-				p.Pen = new Pen(a.Style.LineColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
-				p.Draw(canvas);
-				ArrowDrawn?.Invoke(a, canvas);
+                if (IsSelected(a))
+                {
+                    DrawArrowHandles(a, canvas, handlePen, handleBrush);
+                }
             }
-			foreach (var b in diagram.Boxes)
-			{
-				if (IsSelected(b))
-				{
-					canvas.DrawRectangle(b.Frame, handleLinePen);
-					DrawBoxHandles(b, canvas, handlePen, handleBrush);
-				}
-			}
-			foreach (var a in diagram.Arrows)
-			{
-				if (IsSelected(a))
-				{
-					DrawArrowHandles(a, canvas, handlePen, handleBrush);
-				}
-			}
-			//Debug.WriteLine($"HOVER SEL = {hoverSelection}");
-			if (hoverSelection != null)
-			{
-				var b = hoverSelection as Box;
-				if (b != null)
-				{
-					var selWidth = 2.0 * viewToDiagram.A;
-					var f = b.Frame.GetInflated(b.Style.BorderWidth / 2.0 + selWidth / 2.0);
-					canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, selWidth);
-				}
-				else {
-					var a = hoverSelection as Arrow;
-					if (a != null)
-					{
-						var path = diagram.GetArrowPath(a);
-						path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
-						path.Draw(canvas);
-					}
-				}
-			}
 
-			//
-			// Drag guides
-			//
-			foreach (var g in dragGuides)
-			{
-				canvas.DrawLine(g.Start, g.End, diagram.Style.DragGuideColor, viewToDiagram.A);
-			}
+            if (DraggingPort.HasValue) {
+                var dport = DraggingPort.Value;
+                foreach (var b in diagram.Boxes) {
+                    foreach (var p in b.Ports)
+                    {
+                        DrawPortWhileConnecting(canvas, dport, b, p);
+                    }
+                }
+            }
 
-			//
-			// Debug
-			//
-			foreach (var d in diagram.Paths.DebugDrawings)
-			{
-				d.Draw(canvas);
-			}
+            //Debug.WriteLine($"HOVER SEL = {hoverSelection}");
+            if (hoverSelection != null)
+            {
+                var b = hoverSelection as Box;
+                if (b != null)
+                {
+                    var selWidth = 2.0 * viewToDiagram.A;
+                    var f = b.Frame.GetInflated(b.Style.BorderWidth / 2.0 + selWidth / 2.0);
+                    canvas.DrawRectangle(f, diagram.Style.HoverSelectionColor, selWidth);
+                }
+                else
+                {
+                    var a = hoverSelection as Arrow;
+                    if (a != null)
+                    {
+                        var path = diagram.GetArrowPath(a);
+                        path.Pen = new Pen(diagram.Style.HoverSelectionColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);
+                        path.Draw(canvas);
+                    }
+                }
+            }
 
-			//
-			// Untransform
-			//
-			if (needsTx)
-			{
-				canvas.RestoreState();
-			}
-		}
+            //
+            // Drag guides
+            //
+            foreach (var g in dragGuides)
+            {
+                canvas.DrawLine(g.Start, g.End, diagram.Style.DragGuideColor, viewToDiagram.A);
+            }
+        }
 
-		void DrawBoxHandles(Box box, ICanvas canvas, Pen handlePen, Brush handleBrush)
-		{
-			DrawBoxHandle(box.Frame.TopLeft, canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.TopLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.TopRight, canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.TopRight + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.BottomRight, canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.BottomLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.BottomLeft, canvas, handlePen, handleBrush);
-			DrawBoxHandle(box.Frame.TopLeft + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
-		}
+        protected virtual void DrawPortWhileConnecting(ICanvas canvas, PortRef fromPort, Box box, Port port)
+        {
+            var color = diagram.CanConnectPorts(fromPort, new PortRef(box, port)) ? Colors.Green : Colors.Red;
+            var rect = port.GetFrame(box);
+            canvas.FillEllipse(rect, color);
+        }
 
-		void DrawBoxHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
-		{
-			var s = handleSize * viewToDiagram.A;
-			canvas.DrawRectangle(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
-		}
+        void DrawBoxHandles(Box box, ICanvas canvas, Pen handlePen, Brush handleBrush)
+        {
+            DrawBoxHandle(box.Frame.TopLeft, canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.TopLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.TopRight, canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.TopRight + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.BottomRight, canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.BottomLeft + new Point(box.Frame.Width / 2, 0), canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.BottomLeft, canvas, handlePen, handleBrush);
+            DrawBoxHandle(box.Frame.TopLeft + new Point(0, box.Frame.Height / 2), canvas, handlePen, handleBrush);
+        }
 
-		void DrawArrowHandles(Arrow arrow, ICanvas canvas, Pen handlePen, Brush handleBrush)
-		{
-			DrawArrowHandle(arrow.Start.PortFrame.Center, canvas, handlePen, handleBrush);
-			DrawArrowHandle(arrow.End.PortFrame.Center, canvas, handlePen, handleBrush);
-		}
+        void DrawBoxHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
+        {
+            var s = handleSize * viewToDiagram.A;
+            canvas.DrawRectangle(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
+        }
 
-		void DrawArrowHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
-		{
-			var s = handleSize * viewToDiagram.A;
-			canvas.DrawEllipse(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
-		}
+        void DrawArrowHandles(Arrow arrow, ICanvas canvas, Pen handlePen, Brush handleBrush)
+        {
+            DrawArrowHandle(arrow.Start.PortFrame.Center, canvas, handlePen, handleBrush);
+            DrawArrowHandle(arrow.End.PortFrame.Center, canvas, handlePen, handleBrush);
+        }
 
-		#endregion
-	}
+        void DrawArrowHandle(Point point, ICanvas canvas, Pen handlePen, Brush handleBrush)
+        {
+            var s = handleSize * viewToDiagram.A;
+            canvas.DrawEllipse(point.X - s / 2, point.Y - s / 2, s, s, handlePen, handleBrush);
+        }
 
-	public struct TouchEvent
+
+        #endregion
+    }
+
+    public struct TouchEvent
 	{
 		public long TouchId;
 		public Point Location;
