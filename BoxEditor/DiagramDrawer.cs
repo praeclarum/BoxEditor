@@ -27,6 +27,11 @@ namespace BoxEditor
 
             //var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
 
+            foreach (var a in diagram.Arrows)
+            {
+                DrawArrow(canvas, a, diagram, viewToDiagram);
+            }
+
             foreach (var b in diagram.Boxes)
             {
                 DrawBox(canvas, b);
@@ -34,10 +39,6 @@ namespace BoxEditor
                 {
                     DrawPort(canvas, b, p);
                 }
-            }
-            foreach (var a in diagram.Arrows)
-            {
-                DrawArrow(diagram, canvas, viewToDiagram, a);
             }
 
             draw();
@@ -59,7 +60,7 @@ namespace BoxEditor
             }
         }
 
-        public virtual void DrawArrow(Diagram diagram, ICanvas canvas, Transform viewToDiagram, Arrow a)
+        public virtual void DrawArrow(ICanvas canvas, Arrow a, Diagram diagram, Transform viewToDiagram)
         {
             var p = diagram.GetArrowPath(a);
             p.Pen = new Pen(a.Style.LineColor, a.Style.ViewDependent ? a.Style.LineWidth * viewToDiagram.A : a.Style.LineWidth);

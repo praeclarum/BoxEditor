@@ -13,6 +13,7 @@ namespace BoxEditor
         public readonly ImmutableArray<Box> Boxes;
         public readonly ImmutableArray<Arrow> Arrows;
 		public readonly DiagramStyle Style;
+        public readonly object Value;
 
         readonly Lazy<DiagramPaths> paths;
         public DiagramPaths Paths => paths.Value;
@@ -20,14 +21,15 @@ namespace BoxEditor
         readonly Lazy<ImmutableDictionary<PortRef, ImmutableArray<Arrow>>> portArrows;
         public ImmutableDictionary<PortRef, ImmutableArray<Arrow>> PortArrows => portArrows.Value;
 
-        public static Diagram Empty =
-			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default);
+        public static readonly Diagram Empty =
+			new Diagram(ImmutableArray<Box>.Empty, ImmutableArray<Arrow>.Empty, DiagramStyle.Default, null);
 
-		public Diagram(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows, DiagramStyle style)
+		public Diagram(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows, DiagramStyle style, object value)
         {
             Boxes = boxes;
             Arrows = arrows;
 			Style = style;
+            Value = value;
 			paths = new Lazy<DiagramPaths> (() => PathPlanning.Plan(boxes, arrows));
             portArrows = new Lazy<ImmutableDictionary<PortRef, ImmutableArray<Arrow>>>(this.GetPortArrows);
         }
@@ -36,13 +38,18 @@ namespace BoxEditor
 
         public Diagram WithBoxes(ImmutableArray<Box> newBoxes)
 		{
-			return new Diagram(newBoxes, Arrows, Style);
+			return new Diagram(newBoxes, Arrows, Style, Value);
 		}
 
 		public Diagram WithArrows(ImmutableArray<Arrow> newArrows)
 		{
-			return new Diagram(Boxes, newArrows, Style);
+			return new Diagram(Boxes, newArrows, Style, Value);
 		}
+
+        public Diagram WithValue(object value)
+        {
+            return new Diagram(Boxes, Arrows, Style, value);
+        }
 
         public Diagram AddBox (Box box)
         {
@@ -90,7 +97,7 @@ namespace BoxEditor
 					newArrows = newArrows.Replace(aa.Item1, aa.Item2);
 				}
 			}
-			return new Diagram(newBoxes, newArrows, Style);
+			return new Diagram(newBoxes, newArrows, Style, Value);
 		}
 
 		public Tuple<Diagram, ImmutableArray<DragGuide>, ImmutableArray<Box>> MoveBoxes(ImmutableArray<Box> boxes, Point offset, bool snapToGuides, double minDist, TimeSpan maxTime)
@@ -323,7 +330,7 @@ namespace BoxEditor
 
             var arrows = arrowValues.Select (o => getArrow(portF, o)).ToImmutableArray();
 
-            return new Diagram(boxes, arrows, style);
+            return new Diagram(boxes, arrows, style, null);
 		}
 
 		public IEnumerable<Box> HitTestBoxes(Point point)
@@ -392,7 +399,9 @@ namespace BoxEditor
                 (start.Port.AcceptMask & end.Port.Kind) != 0u;
             if (!acceptable)
                 return false;
+            // <= because there is the temp wire connected to start
             var correctNumber =
+                PortArrows.ContainsKey(start) && PortArrows[start].Length <= start.Port.MaxConnections &&
                 PortArrows.ContainsKey(end) && PortArrows[end].Length < end.Port.MaxConnections;
             if (!correctNumber)
                 return false;

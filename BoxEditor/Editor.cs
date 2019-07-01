@@ -539,12 +539,12 @@ namespace BoxEditor
             var portHit = dragArrowPortHit;
             touchGesture = TouchGesture.DragArrow;
             dragArrowLastDiagramLoc = diagramLoc;
-            var dragBoxPort = new Port("0", "TEMPDRAGBOXPORT", 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
-            var dragBoxFrame = new Rect(diagramLoc, new Size(22, 22));
+            var dragBoxPort = new Port("TEMPDRAGPORT", null, 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero);
+            var dragBoxFrame = new Rect(diagramLoc - new Point(11, 11), new Size(22, 22));
             var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray());
             var endRef = new PortRef(dragBox, dragBoxPort);
             var startRef = new PortRef(portHit.Item1, portHit.Item2);
-            dragArrow = new Arrow("TEMPDRAG", "TEMPDRAG", ArrowStyle.Default, startRef, endRef);
+            dragArrow = new Arrow("TEMPDRAGARROW", null, ArrowStyle.Default, startRef, endRef);
             dragArrowEndBox = dragBox;
             dragDiagram = diagram.AddBox(dragArrowEndBox).AddArrow(dragArrow);
 
@@ -827,6 +827,8 @@ namespace BoxEditor
 
         protected virtual void DrawPortWhileConnecting(ICanvas canvas, PortRef fromPort, Box box, Port port)
         {
+            if (port.Id == "TEMPDRAGPORT")
+                return;
             var color = diagram.CanConnectPorts(fromPort, new PortRef(box, port)) ? Colors.Green : Colors.Red;
             var rect = port.GetFrame(box);
             canvas.FillEllipse(rect, color);
