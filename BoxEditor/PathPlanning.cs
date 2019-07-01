@@ -117,12 +117,14 @@ namespace BoxEditor
 
 	public class VisibilityPlanner : IPathPlanner
 	{
-		public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
+        public double MaxNeighborDistance = 200;
+
+        public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
 		{
 			var arrowPaths = new List<PlannedPath>();
 
 			var vmap = new VisibilityMap(boxes);
-			var graph = new Graph(vmap);
+			var graph = new Graph(vmap, MaxNeighborDistance);
 
 			foreach (var b in boxes)
 			{
@@ -349,9 +351,11 @@ namespace BoxEditor
 		class Graph
 		{
 			readonly VisibilityMap vmap;
-			public Graph(VisibilityMap vmap)
+            readonly double ignoreDistSq;
+			public Graph(VisibilityMap vmap, double maxNeighborDistance)
 			{
 				this.vmap = vmap;
+                this.ignoreDistSq = maxNeighborDistance * maxNeighborDistance;
 			}
 			public readonly List<Vertex> Vertices = new List<Vertex>();
 			public Vertex AddVertex(Point p, int ignoreBox = -1)
@@ -361,16 +365,21 @@ namespace BoxEditor
 				//
 				var vert = new Vertex(p, ignoreBox);
 
-				//
-				// Calculate its visibility
-				//
+                //
+                // Calculate its visibility for already calculated verts
+                //
 				foreach (var v in Vertices)
 				{
 					if (v.Neighbors == null) continue;
-					if (vmap.LineOfSight(v.Point, vert.Point, v.IgnoreBox, vert.IgnoreBox))
-					{
-						v.Neighbors.Add(vert);
-					}
+                    var dx = v.Point.X - vert.Point.X;
+                    var dy = v.Point.Y - vert.Point.Y;
+                    if (dx * dx + dy * dy < ignoreDistSq)
+                    {
+                        if (vmap.LineOfSight(v.Point, vert.Point, v.IgnoreBox, vert.IgnoreBox))
+                        {
+                            v.Neighbors.Add(vert);
+                        }
+                    }
 				}
 
 				Vertices.Add(vert);
@@ -383,10 +392,15 @@ namespace BoxEditor
 				foreach (var v in Vertices)
 				{
 					if (v == vert) continue;
-					if (vmap.LineOfSight(vert.Point, v.Point, vert.IgnoreBox, v.IgnoreBox))
-					{
-						vert.Neighbors.Add(v);
-					}
+                    var dx = v.Point.X - vert.Point.X;
+                    var dy = v.Point.Y - vert.Point.Y;
+                    if (dx * dx + dy * dy < ignoreDistSq)
+                    {
+                        if (vmap.LineOfSight(vert.Point, v.Point, vert.IgnoreBox, v.IgnoreBox))
+                        {
+                            vert.Neighbors.Add(v);
+                        }
+                    }
 				}
 			}
 			public void RemoveVertex(Vertex vert)
@@ -415,13 +429,14 @@ namespace BoxEditor
 		{
 			readonly Point[] bounds;
             readonly bool[] ignoreBox;
+            //readonly Quadtree quad;
 
 			public VisibilityMap(ImmutableArray<Box> boxes)
 			{
 				bounds = new Point[boxes.Length * 2];
                 ignoreBox = new bool[boxes.Length];
                 var ignoresToCascade = new List<int>();
-				for (int i = 0; i < boxes.Length; i++)
+                for (int i = 0; i < boxes.Length; i++)
 				{
 					var b = boxes[i];
 					var bb = b.PreventOverlapFrame;
@@ -430,7 +445,9 @@ namespace BoxEditor
 					bounds[i * 2 + 1] = bb.BottomRight;
                     ignoreBox[i] = bb.Size.Width < 1;
                     if (ignoreBox[i])
+                    {
                         ignoresToCascade.Add(i);
+                    }
 				}
                 var cascaded = new HashSet<int>();
                 while (ignoresToCascade.Count > 0)
@@ -451,18 +468,45 @@ namespace BoxEditor
                         }
                     }
                 }
-			}
+                //var minx = double.MaxValue;
+                //var miny = double.MaxValue;
+                //var maxx = double.MinValue;
+                //var maxy = double.MinValue;                    
+                //for (int i = 0; i < boxes.Length; i++)
+                //{
+                //    if (!ignoreBox[i])
+                //    {
+                //        var tl = bounds[i * 2];
+                //        var br = bounds[i * 2 + 1];
+                //        minx = Math.Min(minx, tl.X);
+                //        miny = Math.Min(miny, tl.Y);
+                //        maxx = Math.Max(maxx, br.X);
+                //        maxy = Math.Max(maxy, br.Y);
+                //    }
+                //}
+                //quad = new Quadtree(new Rect(minx-1,miny-1,maxx-minx+2,maxy-miny+2), 6);
+                //for (int i = 0; i < boxes.Length; i++)
+                //{
+                //    if (!ignoreBox[i])
+                //    {
+                //        var tl = bounds[i * 2];
+                //        var br = bounds[i * 2 + 1];
+                //        quad.AddToAncestry(i, new Rect(tl, new Size(br.X - tl.X, br.Y - tl.Y)));
+                //    }
+                //}
+                //Debug.WriteLine(quad);
+            }
 
-			/// <summary>
-			/// "An Efficient and Robust Ray–Box Intersection Algorithm"
-			/// - Amy Williams, Steve Barrus, R. Keith Morley, Peter Shirley - University of Utah
-			/// </summary>
-			public bool LineOfSight(Point origin, Point destination, int ignoreBox0, int ignoreBox1)
+            /// <summary>
+            /// "An Efficient and Robust Ray–Box Intersection Algorithm"
+            /// - Amy Williams, Steve Barrus, R. Keith Morley, Peter Shirley - University of Utah
+            /// </summary>
+            public bool LineOfSight(Point origin, Point destination, int ignoreBox0, int ignoreBox1)
 			{
-				//
-				// Cached ray properties
-				//
-				var delta = (destination - origin);
+                //
+                // Cached ray properties
+                //
+                var delta = (destination - origin);
 				var distance = delta.Distance;
 				if (distance < 1e-12) return true;
 
@@ -474,14 +518,25 @@ namespace BoxEditor
 				var t0 = 0.0;
 				var t1 = distance;
 
-				//
-				// Go through the boxes...
-				//
-				for (int i = 0, boxIndex = 0; i < bounds.Length; i += 2, boxIndex++)
+                var minx = Math.Min(origin.X, destination.X);
+                var miny = Math.Min(origin.Y, destination.Y);
+                var maxx = Math.Max(origin.X, destination.X);
+                var maxy = Math.Max(origin.Y, destination.Y);
+                //var node = quad.NodeForFrame(new Rect (minx, miny, maxx-minx, maxy-miny), -1);
+
+                //Debug.WriteLine($"LOS {origin} -> {destination} #{node?.Values?.Count}");
+
+                //
+                // Go through the boxes...
+                //
+                for (int boxIndex = 0; boxIndex < bounds.Length/2; boxIndex++)
+                //for (int j = 0; node?.Values != null && j < node.Values.Count; j++)
 				{
+                    //var boxIndex = node.Values[j];
 					if (ignoreBox[boxIndex] || boxIndex == ignoreBox0 || boxIndex == ignoreBox1)
 						continue;
 					
+                    var i = boxIndex * 2;
 					var tmin = (bounds[i + sign0].X - origin.X) * invDirection.X;
 					var tmax = (bounds[i + 1 - sign0].X - origin.X) * invDirection.X;
 					var tymin = (bounds[i + sign1].Y - origin.Y) * invDirection.Y;

@@ -62,16 +62,27 @@ namespace BoxEditor
 			rootNode = new Node(0, new Rect(-w / 2, -h / 2, w, h));
 		}
 
-		public void Add(int box, Rect boxFrame)
+        public Quadtree(Rect rootFrame, int maxDepth = 8)
+        {
+            this.maxDepth = maxDepth;
+            rootNode = new Node(0, rootFrame);
+        }
+
+        public void Add(int box, Rect boxFrame)
 		{
-			var n = NodeForFrame(boxFrame);
+			var n = NodeForFrame(boxFrame, -1);
 			n.AddValue(box, boxFrame);
 		}
 
-		public void Move(int box, Rect oldFrame, Rect newFrame)
+        public void AddToAncestry(int box, Rect boxFrame)
+        {
+            NodeForFrame(boxFrame, box);
+        }
+
+        public void Move(int box, Rect oldFrame, Rect newFrame)
 		{
 			var oldn = GetNodeForBox(box, oldFrame);
-			var newn = NodeForFrame(newFrame);
+			var newn = NodeForFrame(newFrame, -1);
 			if (oldn != newn)
 			{
 				oldn.RemoveValue(box);
@@ -79,14 +90,22 @@ namespace BoxEditor
 			}
 		}
 
-		Node NodeForFrame(Rect boxFrame)
+		public Node NodeForFrame(Rect boxFrame, int toAdd)
 		{
 			var q = new Queue<Node>();
 			q.Enqueue(rootNode);
 			var cinter = new bool[4];
+            //var lastN = default(Node);
 			while (q.Count > 0)
 			{
 				var n = q.Dequeue();
+                //lastN = n;
+                if (toAdd >= 0)
+                {
+                    if (n.Values == null)
+                        n.Values = new List<int>();
+                    n.Values.Add(toAdd);
+                }
 
 				var cintercount = 0;
 				for (var i = 0; i < 4; i++)
@@ -115,7 +134,8 @@ namespace BoxEditor
 					}
 				}
 			}
-			throw new Exception($"Failed to find node for {boxFrame}");
+			//throw new Exception($"Failed to find node for {boxFrame} ({lastN})");
+            return null;
 		}
 
 		Node GetNodeForBox(int box, Rect boxFrame)

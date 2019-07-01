@@ -27,6 +27,11 @@ namespace BoxEditor
 
             //var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
 
+            foreach (var b in diagram.Boxes)
+            {
+                DrawBox(canvas, b);
+            }
+
             foreach (var a in diagram.Arrows)
             {
                 DrawArrow(canvas, a, diagram, viewToDiagram);
@@ -34,7 +39,6 @@ namespace BoxEditor
 
             foreach (var b in diagram.Boxes)
             {
-                DrawBox(canvas, b);
                 foreach (var p in b.Ports)
                 {
                     DrawPort(canvas, b, p);

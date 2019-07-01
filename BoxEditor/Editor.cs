@@ -391,7 +391,7 @@ namespace BoxEditor
                         Select(new[] { dragArrowExisting });
                     }
                 }
-                else
+                else if (dragArrowDragged)
                 {
                     if (!cancelled && dragArrowSnap != null)
                     {
@@ -411,6 +411,21 @@ namespace BoxEditor
                         {
                             UpdateDiagram(dragDiagram);
                         }
+                    }
+                }
+                else if (dragArrowPortHit != null)
+                {
+                    var boxHit = dragArrowPortHit.Item1;
+                    if (touch.IsShiftDown)
+                    {
+                        if (!selection.Contains(boxHit))
+                        {
+                            Select(selection.Add(boxHit));
+                        }
+                    }
+                    else
+                    {
+                        Select(new[] { boxHit });
                     }
                 }
             }
