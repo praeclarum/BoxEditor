@@ -15,7 +15,7 @@ namespace BoxEditor
 			if (arrows.Length == 0)
 				return DiagramPaths.Empty;
 			
-			var planner = boxes.Length > 0
+			var planner = 0 < boxes.Length && boxes.Length < 100
 				? (IPathPlanner)new VisibilityPlanner()
 				: new DumbPlanner();
 			
