@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using NGraphics;
 
 namespace BoxEditor
@@ -25,11 +26,15 @@ namespace BoxEditor
                 canvas.Transform(diagramToView);
             }
 
-            //var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
+            var dirtyDiagramRect = viewToDiagram.TransformRect(dirtyViewRect);
+            //Debug.WriteLine(dirtyDiagramRect);
 
             foreach (var b in diagram.Boxes)
             {
-                DrawBox(canvas, b);
+                if (b.Frame.Intersects(dirtyDiagramRect))
+                {
+                    DrawBox(canvas, b);
+                }
             }
 
             foreach (var a in diagram.Arrows)
