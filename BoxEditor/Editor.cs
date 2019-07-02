@@ -363,8 +363,7 @@ namespace BoxEditor
                 if (dragBoxStartSelected != null)
                 {
                     //Debug.WriteLine("SHOW BOX EDItoR: " + dragBoxStartSelected.Id);
-                    var r = new Rect(touch.Location, new Size(1, 1));
-                    ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected, r));
+                    ShowBoxEditor?.Invoke(this, new BoxEventArgs(dragBoxStartSelected, DiagramToView(dragBoxStartSelected.Frame), touch.Location));
                 }
                 else if (dragArrowStartSelected != null)
                 {
@@ -905,11 +904,13 @@ namespace BoxEditor
 	public class BoxEventArgs : EventArgs
 	{
 		public Box Box { get; set; }
-		public Rect Rect { get; set; }
-		public BoxEventArgs(Box box, Rect rect)
+		public Rect BoxViewRect { get; set; }
+        public Point TouchViewPoint { get; set; }
+		public BoxEventArgs(Box box, Rect rect, Point touchPoint)
 		{
 			Box = box;
-			Rect = rect;
+			BoxViewRect = rect;
+            TouchViewPoint = touchPoint;
 		}
 	}
 
