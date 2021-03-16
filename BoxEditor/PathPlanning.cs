@@ -117,7 +117,7 @@ namespace BoxEditor
 
 	public class VisibilityPlanner : IPathPlanner
 	{
-        public double MaxNeighborDistance = 200;
+        public double MaxNeighborDistance = double.MaxValue;
 
         public DiagramPaths Plan(ImmutableArray<Box> boxes, ImmutableArray<Arrow> arrows)
 		{
