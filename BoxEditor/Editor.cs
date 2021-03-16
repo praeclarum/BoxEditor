@@ -794,7 +794,10 @@ namespace BoxEditor
             {
                 if (IsSelected(a))
                 {
-                    DrawArrowHandles(a, canvas, handlePen, handleBrush);
+					var p = diagram.GetArrowPath(a);
+					p.Pen = handleLinePen;
+					p.Draw(canvas);
+					DrawArrowHandles(a, canvas, handlePen, handleBrush);
                 }
             }
 
