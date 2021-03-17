@@ -37,17 +37,17 @@ namespace BoxEditor
                 }
             }
 
-            foreach (var a in diagram.Arrows)
-            {
-                DrawArrow(canvas, a, diagram, viewToDiagram);
-            }
-
             foreach (var b in diagram.Boxes)
             {
                 foreach (var p in b.Ports)
                 {
                     DrawPort(canvas, b, p);
                 }
+            }
+
+            foreach (var a in diagram.Arrows)
+            {
+                DrawArrow(canvas, a, diagram, viewToDiagram);
             }
 
             draw();
