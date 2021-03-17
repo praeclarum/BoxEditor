@@ -62,9 +62,9 @@ namespace BoxEditor
 		public readonly Box Box;
 		public readonly Port Port;
 		public PortRef(Box box, Port port)
-		{
-			Box = box;
-			Port = port;
+		{            
+			Box = box ?? throw new ArgumentNullException(nameof(box));
+			Port = port ?? throw new ArgumentNullException(nameof(port));
 		}
 		public PortRef UpdateBox(Box b, Box newb)
 		{
