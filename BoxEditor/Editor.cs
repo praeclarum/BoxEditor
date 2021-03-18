@@ -106,18 +106,18 @@ namespace BoxEditor
 			get { return viewToDiagram.A; }
 		}
 
-		Point ViewToDiagram(Point point)
+		public Point ViewToDiagram(Point point)
 		{
 			return viewToDiagram.TransformPoint(point);
 		}
 
-		Point DiagramToView(Point point)
+		public Point DiagramToView(Point point)
 		{
 			var diagramToView = viewToDiagram.GetInverse();
 			return diagramToView.TransformPoint(point);
 		}
 
-		Rect DiagramToView(Rect rect)
+		public Rect DiagramToView(Rect rect)
 		{
 			var diagramToView = viewToDiagram.GetInverse();
 			return diagramToView.TransformRect(rect);
@@ -154,6 +154,19 @@ namespace BoxEditor
 		double handleSize = 8;
 
         public PortRef? DraggingPort => dragArrow?.Start;
+
+		public void RightMouseDown(TouchEvent touch)
+		{
+			var diagramLoc = ViewToDiagram(touch.Location);
+			var boxHit = diagram.HitTestBoxes(diagramLoc).FirstOrDefault();
+			if (boxHit != null)
+			{
+				if (!IsSelected(boxHit))
+				{
+					Select(new[] { boxHit });
+				}
+			}
+		}
 
 		public void TouchBegan (TouchEvent touch)
         {
