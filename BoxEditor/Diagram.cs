@@ -340,7 +340,7 @@ namespace BoxEditor
 
 		public IEnumerable<Arrow> HitTestArrows(Point point, double viewToDiagramScale)
 		{
-			var maxDist = viewToDiagramScale * 22;
+			var maxDist = viewToDiagramScale * Style.MaxHitDistance;
 			var q = from a in Arrows
 					let p = GetArrowPath (a)
 					let d = p.DistanceTo(point)
@@ -352,7 +352,7 @@ namespace BoxEditor
 
         public IEnumerable<Tuple<Box, Port>> HitTestPorts(Point point, double viewToDiagramScale)
         {
-            var maxDist = viewToDiagramScale * 22;
+            var maxDist = viewToDiagramScale * Style.MaxHitDistance;
             var q = from b in Boxes
                     from p in b.Ports
                     let pfr = p.GetFrame (b)
@@ -553,6 +553,7 @@ namespace BoxEditor
 		public readonly Color DragGuideColor;
 
 		public readonly double DragHandleDistance;
+		public readonly double MaxHitDistance;
 
 		public static readonly DiagramStyle Default = new DiagramStyle(
 			Color.FromWhite(236/255.0, 1),
@@ -560,6 +561,7 @@ namespace BoxEditor
 			Colors.Black,
 			new Color("#45C0FE"),
 			new Color("#FF2600"),
+			22.0,
 			22.0);
 
 		public DiagramStyle(
@@ -568,7 +570,8 @@ namespace BoxEditor
 			Color handleBorderColor, 
 			Color hoverSelectionColor,
 			Color dragGuideColor,
-			double dragHandleDistance)
+			double dragHandleDistance,
+			double maxHitDistance)
 		{
 			BackgroundColor = backgroundColor;
 			HandleBackgroundColor = handleBackgroundColor;
@@ -576,16 +579,22 @@ namespace BoxEditor
 			HoverSelectionColor = hoverSelectionColor;
 			DragGuideColor = dragGuideColor;
 			DragHandleDistance = dragHandleDistance;
+			MaxHitDistance = maxHitDistance;
 		}
 
 		public DiagramStyle WithBackgroundColor(Color color)
 		{
-			return new DiagramStyle(color, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, DragHandleDistance);
+			return new DiagramStyle(color, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, DragHandleDistance, MaxHitDistance);
 		}
 
 		public DiagramStyle WithDragHandleDistance(double distance)
 		{
-			return new DiagramStyle(BackgroundColor, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, distance);
+			return new DiagramStyle(BackgroundColor, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, distance, MaxHitDistance);
+		}
+
+		public DiagramStyle WithMaxHitDistance(double distance)
+		{
+			return new DiagramStyle(BackgroundColor, HandleBackgroundColor, HandleBorderColor, HoverSelectionColor, DragGuideColor, DragHandleDistance, distance);
 		}
 	}
 }
