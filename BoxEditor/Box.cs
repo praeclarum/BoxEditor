@@ -254,9 +254,9 @@ namespace BoxEditor
 		/// <param name="value">The value to associate with the port.</param>
 		/// <param name="relativePoint">The position of the port relative to the box's frame.</param>
 		/// <param name="direction">Direction arrows should leave this port.</param>
-		public void AddPort(string id, object value, Point relativePoint, Size size, Point direction)
+		public void AddPort(string id, object value, Point relativePoint, Size size, Point direction, FlowDirection flowDirection)
         {
-			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, size, direction));
+			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, size, direction, flowDirection));
         }
 
 		/// <summary>
@@ -265,9 +265,9 @@ namespace BoxEditor
 		/// <param name="value">The value to associate with the port.</param>
 		/// <param name="relativePoint">The location of the port relative to the box's frame.</param>
 		/// <param name="direction">Direction arrows should leave this port.</param>
-		public void AddPort(string id, object value, Point relativePoint, Point direction)
+		public void AddPort(string id, object value, Point relativePoint, Point direction, FlowDirection flowDirection)
 		{
-			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, Size.Zero, direction));
+			Ports.Add(new Port(id, value, 1, uint.MaxValue, int.MaxValue, relativePoint, Size.Zero, direction, flowDirection));
 		}
 
 		/// <summary>

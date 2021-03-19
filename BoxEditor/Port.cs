@@ -14,8 +14,9 @@ namespace BoxEditor
         public readonly Point RelativePosition;
         public readonly Size Size;
 		public readonly Point Direction;
+        public readonly FlowDirection FlowDirection;
 
-		public Port(string id, object value, uint kind, uint acceptMask, int maxConnections, Point relativePosition, Size size, Point direction)
+		public Port(string id, object value, uint kind, uint acceptMask, int maxConnections, Point relativePosition, Size size, Point direction, FlowDirection flowDirection)
         {
             Id = id;
             Value = value;
@@ -25,13 +26,14 @@ namespace BoxEditor
             RelativePosition = relativePosition;
             Size = size;
 			Direction = direction;
+            FlowDirection = flowDirection;
         }
 
         public override string ToString() => $"Port {Id}";
 
         public Port WithDirection(Point direction)
         {
-            return new Port(Id, Value, Kind, AcceptMask, MaxConnections, RelativePosition, Size, direction);
+            return new Port(Id, Value, Kind, AcceptMask, MaxConnections, RelativePosition, Size, direction, FlowDirection);
         }
 
 		public Point GetPoint(Box inBox)
@@ -56,6 +58,13 @@ namespace BoxEditor
 			return pf;
 		}
 	}
+
+    public enum FlowDirection
+    {
+        Input,
+        Output,
+        Bidireactional
+    }
 
 	public struct PortRef
 	{
