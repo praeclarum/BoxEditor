@@ -407,7 +407,8 @@ namespace BoxEditor
                 {
                     if (!cancelled && dragArrowSnap != null)
                     {
-                        var newArrow = dragArrow.WithEnd(dragArrowSnap.Item1, dragArrowSnap.Item2);
+                        var newArrow = dragArrow.WithEnd(dragArrowSnap.Item1, dragArrowSnap.Item2).FlipIfNeeded();
+						
                         var d = dragDiagram.RemoveBox(dragArrow.EndBox).UpdateArrow(dragArrow, newArrow);
                         UpdateDiagram(d);
                         ArrowChanged?.Invoke(this, new ArrowChangedEventArgs { OldArrow = null, NewArrow = newArrow });
@@ -566,7 +567,7 @@ namespace BoxEditor
             var portHit = dragArrowPortHit;
             touchGesture = TouchGesture.DragArrow;
             dragArrowLastDiagramLoc = diagramLoc;
-            var dragBoxPort = new Port("TEMPDRAGPORT", null, 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero, FlowDirection.Bidireactional);
+            var dragBoxPort = new Port("TEMPDRAGPORT", null, 256, uint.MaxValue, int.MaxValue, new Point(0.5, 0.5), new Size(11, 11), Point.Zero, FlowDirection.Bidirectional);
             var dragBoxFrame = new Rect(diagramLoc - new Point(11, 11), new Size(22, 22));
             var dragBox = new Box("TEMPDRAGBOX", null, dragBoxFrame, new Rect(diagramLoc, Size.Zero), BoxStyle.Default, new[] { dragBoxPort }.ToImmutableArray());
             var endRef = new PortRef(dragBox, dragBoxPort);

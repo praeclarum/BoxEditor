@@ -63,7 +63,7 @@ namespace BoxEditor
     {
         Input,
         Output,
-        Bidireactional
+        Bidirectional
     }
 
 	public struct PortRef

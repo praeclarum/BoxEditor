@@ -14,6 +14,8 @@ namespace BoxEditor
 
 		public Box StartBox => Start.Box;
 		public Box EndBox => End.Box;
+		public Port StartPort => Start.Port;
+		public Port EndPort => End.Port;
 
 		public Arrow(string id, object value, ArrowStyle style, PortRef start, PortRef end)
         {
@@ -39,7 +41,40 @@ namespace BoxEditor
         {
             return new Arrow(Id, Value, Style, Start, new PortRef (box, port));
         }
-    }
+
+		public bool NeedsFlip
+		{
+			get
+			{
+				var arrowNeedsFlip = Start.Port.FlowDirection switch
+				{
+					FlowDirection.Input => true,
+					FlowDirection.Output => false,
+					_ => false,
+				};
+				if (!arrowNeedsFlip)
+				{
+					arrowNeedsFlip = End.Port.FlowDirection switch
+					{
+						FlowDirection.Input => false,
+						FlowDirection.Output => true,
+						_ => false,
+					};
+				}
+				return arrowNeedsFlip;
+			}
+		}
+
+		public Arrow Flip()
+		{
+			return new Arrow(Id, Value, Style, End, Start);
+		}
+
+		public Arrow FlipIfNeeded()
+		{
+			return NeedsFlip ? Flip() : this;
+		}
+	}
 
 	public class ArrowStyle
 	{
