@@ -21,6 +21,7 @@ namespace BoxEditor
 		public event EventHandler<ArrowEventArgs> ShowArrowEditor;
         public event EventHandler<ArrowChangedEventArgs> ArrowChanged;
         public event EventHandler<ArrowEventArgs> ArrowRemoved;
+		public event EventHandler ViewTransformChanged;
 
         public Diagram Diagram
         {
@@ -90,12 +91,16 @@ namespace BoxEditor
 		public Transform ViewToDiagramTransform
 		{
 			get { return viewToDiagram; }
-			set { viewToDiagram = value; Redraw?.Invoke(this, EventArgs.Empty); }
+			set { viewToDiagram = value;
+				ViewTransformChanged?.Invoke(this, EventArgs.Empty);
+				Redraw?.Invoke(this, EventArgs.Empty); }
 		}
 		public Transform DiagramToViewTransform
 		{
 			get { return viewToDiagram.GetInverse(); }
-			set { viewToDiagram = value.GetInverse(); Redraw?.Invoke(this, EventArgs.Empty); }
+			set { viewToDiagram = value.GetInverse();
+				ViewTransformChanged?.Invoke(this, EventArgs.Empty);
+				Redraw?.Invoke(this, EventArgs.Empty); }
 		}
 		public double DiagramToViewScale
 		{
@@ -498,6 +503,7 @@ namespace BoxEditor
 			var offsetn = Transform.Translate(-magLoc);
 			var t = offset * scale * offsetn * viewToDiagram;
 			viewToDiagram = t;
+			ViewTransformChanged?.Invoke(this, EventArgs.Empty);
 			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 		public void MagnificationEnded(double magnification, TouchEvent touch)
@@ -516,6 +522,7 @@ namespace BoxEditor
 			var offset = Transform.Translate(-scroll / DiagramToViewScale);
 			var t = offset * viewToDiagram;
 			viewToDiagram = t;
+			ViewTransformChanged?.Invoke(this, EventArgs.Empty);
 			Redraw?.Invoke(this, EventArgs.Empty);
 		}
 		public void ScrollEnded(Point scroll, TouchEvent touch)
